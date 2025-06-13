@@ -70,25 +70,45 @@ export default function RequestsPage() {
 
   // Update localStorage whenever requests state changes
   useEffect(() => {
-    if (typeof window !== 'undefined' && requests.length > 0) { // Avoid saving empty initial state
+    if (typeof window !== 'undefined' && requests.length > 0 && !isLoading) { // Avoid saving empty initial state or during initial load
       localStorage.setItem(REQUESTS_STORAGE_KEY, JSON.stringify(requests));
     }
-  }, [requests]);
+  }, [requests, isLoading]);
   
   // Re-fetch active user if it changes due to header interaction
   useEffect(() => {
-    const activeId = getActiveUserId();
-    if (activeId !== currentUserId) {
-        setIsLoading(true);
-        setCurrentUserId(activeId);
-        setCurrentUserProfile(getActiveUserProfile());
-        // Reload requests for the new user, potentially from localStorage
-        const storedRequestsJson = localStorage.getItem(REQUESTS_STORAGE_KEY);
-        const loadedRequests = parseStoredRequests(storedRequestsJson);
-        setRequests(loadedRequests.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
-        setIsLoading(false);
+    const handleUserSwitch = () => {
+        const newActiveId = getActiveUserId();
+        if (newActiveId !== currentUserId) {
+            setIsLoading(true);
+            setCurrentUserId(newActiveId);
+            setCurrentUserProfile(getActiveUserProfile());
+            // Reload requests for the new user from localStorage
+            if (typeof window !== 'undefined') {
+                const storedRequestsJson = localStorage.getItem(REQUESTS_STORAGE_KEY);
+                const loadedRequests = parseStoredRequests(storedRequestsJson);
+                setRequests(loadedRequests.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
+            }
+            setIsLoading(false);
+        }
+    };
+    
+    // Listen for storage changes as a proxy for user switching if direct event isn't available
+    // Also re-check on focus in case localStorage was changed in another tab
+    window.addEventListener('storage', handleUserSwitch);
+    window.addEventListener('focus', handleUserSwitch);
+    
+    // Initial check if currentUserId prop was already set from SSR and needs processing
+    // This is more for robustness if the first useEffect's conditions weren't perfectly met
+    if (currentUserId && requests.length === 0 && !isLoading) { 
+        // This case might not be strictly necessary if the first useEffect always runs.
     }
-  }, [currentUserId]); 
+
+    return () => {
+        window.removeEventListener('storage', handleUserSwitch);
+        window.removeEventListener('focus', handleUserSwitch);
+    };
+  }, [currentUserId, isLoading, requests.length]); 
   
   const sentRequests = useMemo(() => {
     if (!currentUserId) return [];
@@ -246,3 +266,5 @@ export default function RequestsPage() {
     </div>
   );
 }
+
+    
