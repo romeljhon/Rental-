@@ -2,15 +2,16 @@
 "use client";
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, LayoutGrid, PlusCircle, CalendarCheck, MessageCircle, Menu, X, Shield, Users, User, Bell, ChevronDown, Sun, Moon, ListChecks, LogOut, UserCog } from 'lucide-react';
-import type { NavItem, UserProfile } from '@/types';
+import { Home, LayoutGrid, PlusCircle, CalendarCheck, MessageCircle, Menu, X, Shield, Users, User, Bell, ChevronDown, Sun, Moon, ListChecks, LogOut, UserCog, Mail } from 'lucide-react';
+import type { NavItem, UserProfile, Notification } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetClose, SheetTrigger } from '@/components/ui/sheet';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import React, { useState, useEffect } from 'react';
 import { ThemeToggleButton } from './ThemeToggleButton';
-import { getActiveUserProfile, setActiveUserId, ALL_MOCK_USERS } from '@/lib/auth';
-
+import { getActiveUserProfile, setActiveUserId, ALL_MOCK_USERS, getActiveUserId } from '@/lib/auth';
+import { useNotifications } from '@/contexts/NotificationContext'; // Added
+import { formatDistanceToNowStrict } from 'date-fns'; // Added for timestamp
 
 const navItems: NavItem[] = [
   { href: '/', label: 'Browse', icon: LayoutGrid, exact: true },
@@ -31,10 +32,21 @@ export function Header() {
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [activeUser, setActiveUser] = useState<UserProfile | null>(null);
+  const currentActiveUserId = getActiveUserId(); // Get ID once
+
+  const { getNotificationsForUser, markAsRead, markAllAsRead, unreadCount } = useNotifications(); // Use context
+  const [userNotifications, setUserNotifications] = useState<Notification[]>([]);
+  const currentUnreadCount = unreadCount(currentActiveUserId);
 
   useEffect(() => {
     setActiveUser(getActiveUserProfile());
-  }, [pathname]); // Re-check active user on path change, useful after router.refresh()
+  }, [pathname, currentActiveUserId]); // Re-check active user on path change or user ID change
+
+  useEffect(() => {
+    if (currentActiveUserId) {
+      setUserNotifications(getNotificationsForUser(currentActiveUserId));
+    }
+  }, [currentActiveUserId, getNotificationsForUser, unreadCount]); // Update notifications when count changes too
 
   const handleUserSwitch = (userId: string) => {
     setActiveUserId(userId);
@@ -43,6 +55,16 @@ export function Header() {
     router.refresh(); // Force re-fetch of server components & re-run client effects
   };
 
+  const handleNotificationClick = (notification: Notification) => {
+    markAsRead(notification.id, currentActiveUserId);
+    if (notification.link) {
+      router.push(notification.link);
+    }
+  };
+  
+  const handleMarkAllReadClick = () => {
+    markAllAsRead(currentActiveUserId);
+  }
 
   const isUserManagementPage = pathname.startsWith('/admin') || pathname.startsWith('/staff');
 
@@ -101,7 +123,6 @@ export function Header() {
     </>
   );
 
-
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -132,7 +153,7 @@ export function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="text-foreground hover:bg-accent/10 hover:text-accent-foreground">
                   <UserCog className="h-4 w-4 mr-2" />
-                  {activeUser.name.split('(')[0].trim()} {/* Show name before parenthesis */}
+                  {activeUser.name.split('(')[0].trim()}
                   <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
                 </Button>
               </DropdownMenuTrigger>
@@ -148,17 +169,60 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+          
+          {/* Notification Bell Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative text-foreground hover:text-primary hover:bg-accent/10">
+                <Bell className="h-5 w-5" />
+                {currentUnreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-accent ring-2 ring-background text-xs font-bold flex items-center justify-center">
+                     {/* For a number inside, adjust styling or use a proper badge component from ShadCN if available */}
+                  </span>
+                )}
+                <span className="sr-only">Notifications</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 md:w-96">
+              <DropdownMenuLabel className="flex justify-between items-center">
+                Notifications
+                {currentUnreadCount > 0 && <Badge variant="default" className="bg-accent text-accent-foreground">{currentUnreadCount} New</Badge>}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {userNotifications.length === 0 ? (
+                 <DropdownMenuItem disabled className="text-center text-muted-foreground py-4">No notifications yet.</DropdownMenuItem>
+              ) : (
+                <>
+                  <div className="max-h-80 overflow-y-auto">
+                    {userNotifications.slice(0, 10).map(notif => ( // Show recent 10
+                      <DropdownMenuItem 
+                        key={notif.id} 
+                        onClick={() => handleNotificationClick(notif)} 
+                        className={cn("flex flex-col items-start gap-1 p-3 cursor-pointer hover:bg-muted/50", !notif.isRead && "bg-primary/5")}
+                      >
+                        <div className="w-full flex justify-between items-center">
+                           <span className={cn("font-semibold text-sm", !notif.isRead && "text-primary")}>{notif.title}</span>
+                           <span className="text-xs text-muted-foreground">
+                             {formatDistanceToNowStrict(notif.timestamp, { addSuffix: true })}
+                           </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground w-full truncate">{notif.message}</p>
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleMarkAllReadClick} disabled={currentUnreadCount === 0} className="text-center justify-center">
+                    <Mail className="mr-2 h-4 w-4" /> Mark all as read
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          <Button variant="ghost" size="icon" className="relative text-foreground hover:text-primary hover:bg-accent/10">
-            <Bell className="h-5 w-5" />
-            {isUserManagementPage && ( 
-              <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-accent ring-2 ring-background" />
-            )}
-            <span className="sr-only">Notifications</span>
-          </Button>
           <ThemeToggleButton />
         </nav>
 
+        {/* Mobile Menu Setup */}
         <div className="sm:hidden flex items-center gap-1">
           <ThemeToggleButton />
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -228,12 +292,14 @@ export function Header() {
                       'flex items-center gap-2 justify-start w-full sm:w-auto text-sm text-foreground hover:bg-accent/10 hover:text-accent-foreground relative'
                     )}
                     onClick={() => {
-                        setIsMobileMenuOpen(false);
+                        // For mobile, clicking notifications could take to a dedicated page or open a modal
+                        // For now, let's keep it consistent with desktop: opens a dropdown (if we add a mobile notification dropdown)
+                        setIsMobileMenuOpen(false); // Close menu, main bell icon handles dropdown
                       }} 
                     >
                     <Bell className="h-4 w-4" />
                     Notifications
-                    {isUserManagementPage && ( 
+                    {currentUnreadCount > 0 && ( 
                       <span className="absolute top-1/2 right-3 -translate-y-1/2 block h-2 w-2 rounded-full bg-accent" />
                     )}
                   </Button>

@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import type { RentalRequest, UserProfile } from '@/types';
 import { Loader2, Inbox } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getActiveUserId, getActiveUserProfile, MOCK_USER_JOHN, MOCK_USER_ALICE } from '@/lib/auth'; // Import auth functions
+import { getActiveUserId, getActiveUserProfile, MOCK_USER_JOHN, MOCK_USER_ALICE } from '@/lib/auth';
+import { useNotifications } from '@/contexts/NotificationContext'; // Added
 
 // Original mock profiles - adjust if necessary to match MOCK_USER_JOHN/ALICE
 const otherUserProfile: UserProfile = { id: 'user456', name: 'Bob The Builder', avatarUrl: 'https://placehold.co/100x100.png' };
@@ -29,29 +30,31 @@ const initialMockRequests: RentalRequest[] = [
 
 export default function RequestsPage() {
   const { toast } = useToast();
+  const { addNotification } = useNotifications(); // Added
   const [requests, setRequests] = useState<RentalRequest[]>(initialMockRequests.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
   const [isLoading, setIsLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
+
 
   useEffect(() => {
     const activeId = getActiveUserId();
+    const activeProfile = getActiveUserProfile();
     setCurrentUserId(activeId);
+    setCurrentUserProfile(activeProfile);
     // Simulate loading, can be removed if data is fetched based on currentUserId
     setTimeout(() => {
       setIsLoading(false);
     }, 500); // Shorter delay
-  }, []); // Runs once on mount to get initial user
+  }, []); 
 
   useEffect(() => {
-    // This effect could re-fetch or re-filter data if currentUserId changes
-    // For now, it just ensures the component re-evaluates filters if userId changes
-    // after initial mount (e.g., due to header switch + router.refresh)
     const activeId = getActiveUserId();
     if (activeId !== currentUserId) {
         setCurrentUserId(activeId);
-        // Potentially re-fetch or re-initialize requests if they were user-specific from a backend
+        setCurrentUserProfile(getActiveUserProfile());
     }
-  }, [currentUserId]); // Re-run if currentUserId state changes
+  }, [currentUserId]); 
   
   const sentRequests = useMemo(() => {
     if (!currentUserId) return [];
@@ -65,11 +68,50 @@ export default function RequestsPage() {
 
 
   const updateRequestStatusById = (requestId: string, newStatus: RentalRequest['status']) => {
+    const originalRequest = requests.find(req => req.id === requestId);
+    if (!originalRequest || !currentUserProfile) return;
+
     setRequests(prevRequests =>
       prevRequests.map(req =>
         req.id === requestId ? { ...req, status: newStatus } : req
       )
     );
+
+    // Notification Logic
+    let notifTargetUserId: string | null = null;
+    let notifTitle = '';
+    let notifMessage = '';
+
+    if (newStatus === 'Approved') {
+        notifTargetUserId = originalRequest.requester.id;
+        notifTitle = 'Request Approved!';
+        notifMessage = `${originalRequest.owner.name} approved your request for ${originalRequest.item.name}.`;
+    } else if (newStatus === 'Rejected') {
+        notifTargetUserId = originalRequest.requester.id;
+        notifTitle = 'Request Rejected';
+        notifMessage = `${originalRequest.owner.name} rejected your request for ${originalRequest.item.name}.`;
+    } else if (newStatus === 'Cancelled') {
+        // If owner cancelled, notify requester. If requester cancelled, notify owner.
+        notifTargetUserId = originalRequest.requester.id === currentUserId ? originalRequest.owner.id : originalRequest.requester.id;
+        notifTitle = 'Request Cancelled';
+        notifMessage = `The request for ${originalRequest.item.name} has been cancelled.`;
+    } else if (newStatus === 'ReceiptConfirmed') {
+        notifTargetUserId = originalRequest.owner.id;
+        notifTitle = 'Item Receipt Confirmed';
+        notifMessage = `${originalRequest.requester.name} confirmed receipt of ${originalRequest.item.name}.`;
+    }
+
+    if (notifTargetUserId && notifTitle) {
+        addNotification({
+            targetUserId: notifTargetUserId,
+            eventType: newStatus === 'ReceiptConfirmed' ? 'item_receipt_confirmed' : 'request_update',
+            title: notifTitle,
+            message: notifMessage,
+            link: '/requests',
+            relatedItemId: originalRequest.itemId,
+            relatedUser: {id: currentUserProfile.id, name: currentUserProfile.name}
+        });
+    }
   };
   
   const handleApprove = (requestId: string) => {
@@ -93,7 +135,7 @@ export default function RequestsPage() {
   };
 
 
-  if (isLoading || !currentUserId) {
+  if (isLoading || !currentUserId || !currentUserProfile) {
     return (
       <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -119,7 +161,7 @@ export default function RequestsPage() {
             key={req.id} 
             request={req} 
             type={type}
-            currentViewingUserId={currentUserId} // Pass current user to card for context
+            currentViewingUserId={currentUserId} 
             onApprove={type === 'received' && req.status === 'Pending' ? handleApprove : undefined}
             onReject={type === 'received' && req.status === 'Pending' ? handleReject : undefined}
             onCancel={(req.status === 'Pending' || req.status === 'Approved') ? handleCancel : undefined}

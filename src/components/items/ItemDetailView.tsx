@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { AvailabilityCalendar } from '@/components/shared/AvailabilityCalendar';
-import type { RentalItem } from '@/types';
+import type { RentalItem, UserProfile } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import type { DateRange } from 'react-day-picker';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
-import { getActiveUserId } from '@/lib/auth'; // Import auth function
+import { getActiveUserId, getActiveUserProfile } from '@/lib/auth';
+import { useNotifications } from '@/contexts/NotificationContext'; // Added
 
 interface ItemDetailViewProps {
   item: RentalItem;
@@ -23,14 +24,18 @@ interface ItemDetailViewProps {
 
 export function ItemDetailView({ item }: ItemDetailViewProps) {
   const { toast } = useToast();
+  const { addNotification } = useNotifications(); // Added
+  const [activeUser, setActiveUser] = useState<UserProfile | null>(null); // To store full profile
   const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(undefined);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [chosenDeliveryByRenter, setChosenDeliveryByRenter] = useState<'Pick Up' | 'Delivery' | null>(null);
   const [detailedAvailabilityMessage, setDetailedAvailabilityMessage] = useState<string | null>(null);
-  const [activeUserId, setActiveUserId] = useState<string | null>(null);
+  const [activeUserId, setActiveUserIdState] = useState<string | null>(null); // Renamed to avoid conflict
 
   useEffect(() => {
-    setActiveUserId(getActiveUserId());
+    const id = getActiveUserId();
+    setActiveUserIdState(id);
+    setActiveUser(getActiveUserProfile());
   }, []);
 
   useEffect(() => {
@@ -58,6 +63,10 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
   };
 
   const handleRequestToRent = () => {
+    if (!activeUser) {
+        toast({ title: 'Error', description: 'Could not identify active user.', variant: 'destructive'});
+        return;
+    }
     if (!selectedRange || !selectedRange.from || !selectedRange.to) {
       toast({
         title: 'Select Dates',
@@ -79,6 +88,17 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
     if (chosenDeliveryByRenter) {
       requestDetails += ` Chosen delivery: ${chosenDeliveryByRenter}.`;
     }
+
+    // Add notification for the item owner
+    addNotification({
+        targetUserId: item.owner.id,
+        eventType: 'new_request',
+        title: 'New Rental Request!',
+        message: `${activeUser.name} wants to rent your item: ${item.name}.`,
+        link: `/requests`, // Link to owner's requests page
+        relatedItemId: item.id,
+        relatedUser: {id: activeUser.id, name: activeUser.name}
+    });
 
     console.log('Rental requested for:', item.name, 'from', selectedRange.from, 'to', selectedRange.to, 'delivery:', chosenDeliveryByRenter || item.deliveryMethod);
     toast({
@@ -121,7 +141,7 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
   const isOwnerViewing = activeUserId === item.owner.id;
 
   const isRequestButtonDisabled = 
-    isOwnerViewing || // Disable if owner is viewing
+    isOwnerViewing || 
     !selectedRange?.from || 
     !selectedRange?.to ||
     (item.availabilityStatus !== 'Available') ||

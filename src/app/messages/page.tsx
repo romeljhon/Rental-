@@ -11,6 +11,7 @@ import { Send, Loader2, MessageSquare, Search } from 'lucide-react';
 import type { Conversation, Message as MessageType, UserProfile, RentalItem } from '@/types';
 import Image from 'next/image';
 import { getActiveUserId, getActiveUserProfile, MOCK_USER_JOHN, MOCK_USER_ALICE } from '@/lib/auth';
+import { useNotifications } from '@/contexts/NotificationContext'; // Added
 
 // Mock users array that includes our switchable users and others
 const mockUsersForChat: UserProfile[] = [
@@ -76,6 +77,7 @@ const mockMessages: Record<string, MessageType[]> = {
 
 function MessagesPageContent() {
   const searchParams = useSearchParams();
+  const { addNotification } = useNotifications(); // Added
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -105,13 +107,18 @@ function MessagesPageContent() {
       
       setConversations(userConversations);
 
-      const targetUserId = searchParams.get('with');
+      const targetUserIdFromUrl = searchParams.get('with');
       const targetItemId = searchParams.get('contextItemId');
+      const targetConvId = searchParams.get('convId'); // New: directly open a conversation
       let preSelectedConvId: string | null = null;
 
-      if (targetUserId) {
+
+      if (targetConvId) {
+        const convExists = userConversations.find(c => c.id === targetConvId);
+        if (convExists) preSelectedConvId = targetConvId;
+      } else if (targetUserIdFromUrl) {
         const potentialConvs = userConversations.filter(conv => 
-          conv.participants.some(p => p.id === targetUserId)
+          conv.participants.some(p => p.id === targetUserIdFromUrl)
         );
         if (targetItemId) {
           const itemSpecificConv = potentialConvs.find(conv => conv.itemContext?.id === targetItemId);
@@ -119,9 +126,8 @@ function MessagesPageContent() {
             preSelectedConvId = itemSpecificConv.id;
           }
         }
-        // If no item-specific found, or no item id provided, pick the most recent with the target user
         if (!preSelectedConvId && potentialConvs.length > 0) {
-           preSelectedConvId = potentialConvs[0].id; // Already sorted by most recent
+           preSelectedConvId = potentialConvs[0].id; 
         }
       }
 
@@ -139,7 +145,6 @@ function MessagesPageContent() {
   useEffect(() => {
     if (selectedConversationId) {
       setMessages(mockMessages[selectedConversationId] || []);
-      // Mark messages as read (mock)
       setConversations(prev => prev.map(c => 
           c.id === selectedConversationId ? {...c, unreadCount: 0, lastMessage: c.lastMessage ? {...c.lastMessage, isRead: true} : undefined } : c
       ));
@@ -158,7 +163,7 @@ function MessagesPageContent() {
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedConversationId || !currentUserId) return;
+    if (!newMessage.trim() || !selectedConversationId || !currentUserId || !currentUserProfile || !otherParticipant) return;
 
     setIsSending(true);
     const newMsg: MessageType = {
@@ -167,7 +172,7 @@ function MessagesPageContent() {
       senderId: currentUserId,
       text: newMessage.trim(),
       timestamp: new Date(),
-      isRead: true, // Sender always reads their own message
+      isRead: true, 
     };
 
     setTimeout(() => {
@@ -176,6 +181,18 @@ function MessagesPageContent() {
         c.id === selectedConversationId ? {...c, lastMessage: newMsg} : c
       ).sort((a,b) => (b.lastMessage?.timestamp.getTime() || 0) - (a.lastMessage?.timestamp.getTime() || 0))
       );
+      
+      // Add notification for the recipient
+      addNotification({
+        targetUserId: otherParticipant.id,
+        eventType: 'new_message',
+        title: `New message from ${currentUserProfile.name}`,
+        message: newMessage.trim(),
+        link: `/messages?convId=${selectedConversationId}`, // Link directly to this conversation
+        relatedUser: {id: currentUserProfile.id, name: currentUserProfile.name},
+        relatedItemId: selectedConversation?.itemContext?.id
+      });
+      
       setNewMessage('');
       setIsSending(false);
     }, 300);

@@ -30,7 +30,7 @@ export interface RentalItem {
   rating?: number; // Average rating (e.g., 1-5)
   reviewsCount?: number;
   features?: string[]; // e.g., ["WiFi", "Parking", "Pet-friendly"]
-  deliveryMethod?: 'Pick Up' | 'Delivery' | 'Both'; // Updated field
+  deliveryMethod?: 'Pick Up' | 'Delivery' | 'Both';
   // Could add specific fields based on category, e.g., mileage for cars
 }
 
@@ -71,4 +71,23 @@ export interface Conversation {
   lastMessage?: Message; // Optional: for displaying snippet in conversation list
   unreadCount?: number; // For the current user
   itemContext?: Pick<RentalItem, 'id' | 'name'>; // Optional: if message is about specific item
+}
+
+export type NotificationEventType = 
+  | 'new_request' 
+  | 'request_update' // Generic for approved, rejected, cancelled
+  | 'new_message'
+  | 'item_receipt_confirmed';
+
+export interface Notification {
+  id: string;
+  targetUserId: string; // The user who should see this notification
+  eventType: NotificationEventType;
+  title: string;
+  message: string;
+  timestamp: Date;
+  isRead: boolean;
+  link?: string; // e.g., /requests or /messages/conv123
+  relatedItemId?: string; // Optional ID of the item related to the notification
+  relatedUser?: Pick<UserProfile, 'id' | 'name'>; // Optional: User who triggered the event (e.g., requester, message sender)
 }

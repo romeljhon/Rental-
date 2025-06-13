@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/layout/ThemeProvider';
+import { NotificationProvider } from '@/contexts/NotificationContext'; // Added import
 
 export const metadata: Metadata = {
   title: 'RentalEase - Easy Rentals For Everyone',
@@ -30,12 +31,14 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Header />
-          <main className="flex-grow container mx-auto px-4 py-8">
-            {children}
-          </main>
-          <Footer />
-          <Toaster />
+          <NotificationProvider> {/* Added Provider */}
+            <Header />
+            <main className="flex-grow container mx-auto px-4 py-8">
+              {children}
+            </main>
+            <Footer />
+            <Toaster />
+          </NotificationProvider> {/* Closed Provider */}
         </ThemeProvider>
       </body>
     </html>
