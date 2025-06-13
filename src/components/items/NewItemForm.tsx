@@ -12,11 +12,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, Loader2, UploadCloud, Smartphone, Car, Home, Wrench, Shirt, Bike, Package, Truck, ListChecks } from 'lucide-react';
+import { Sparkles, Loader2, UploadCloud, Smartphone, Car, Home, Wrench, Shirt, Bike, Package, Truck, ListChecks, XIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateListingDescription, type GenerateListingDescriptionInput } from '@/ai/flows/generate-listing-description';
 import type { RentalCategory, RentalItem, UserProfile } from '@/types';
-import { addItem, updateItem } from '@/lib/item-storage'; // Updated import
+import { addItem, updateItem } from '@/lib/item-storage';
 import { getActiveUserProfile } from '@/lib/auth';
 
 const categories: RentalCategory[] = [
@@ -46,7 +46,7 @@ const formSchema = z.object({
   pricePerDay: z.coerce.number().min(0.01, { message: 'Price must be a positive number.' }),
   deliveryMethod: z.enum(['Pick Up', 'Delivery', 'Both'], { required_error: 'Please select a delivery method.' }),
   images: z.any().optional(), 
-  features: z.string().optional(), // Added features field
+  features: z.string().optional(),
 });
 
 type NewItemFormValues = z.infer<typeof formSchema>;
@@ -167,7 +167,7 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
           pricePerDay: data.pricePerDay,
           deliveryMethod: data.deliveryMethod,
           features: itemFeatures,
-          imageUrl: imagePreviews.length > 0 ? imagePreviews[0] : initialData.imageUrl, // Keep original if no new image
+          imageUrl: imagePreviews.length > 0 ? imagePreviews[0] : (initialData.imageUrl || `https://placehold.co/600x400.png?text=${encodeURIComponent(data.itemName)}`),
           images: imagePreviews.length > 0 ? imagePreviews : initialData.images,
         };
         await updateItem(updatedItemData);
@@ -191,7 +191,7 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
           title: 'Item Listed!',
           description: `${data.itemName} has been successfully listed.`,
         });
-        form.reset(defaultValues); // Reset to defaults for new item, not edit mode defaults
+        form.reset(defaultValues); 
         setImagePreviews([]);
       }
     } catch (error) {
@@ -210,10 +210,15 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
     const files = event.target.files;
     if (files) {
       const newPreviewsArray = Array.from(files).map(file => URL.createObjectURL(file));
-      // If editing, replace. If new, add. For simplicity, just replace/set.
-      setImagePreviews(newPreviewsArray.slice(0, 5)); 
+      // Add to existing previews, up to a limit of 5 total
+      setImagePreviews(prev => [...prev, ...newPreviewsArray].slice(0, 5)); 
     }
   };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setImagePreviews(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+
 
   return (
     <Card className="max-w-2xl mx-auto shadow-xl">
@@ -334,20 +339,39 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
           <div className="space-y-2">
             <Label htmlFor="images">Upload Images (Max 5, first is primary)</Label>
             <div className="flex items-center justify-center w-full">
-                <label htmlFor="images-upload" className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg bg-card hover:bg-muted transition-colors ${isSubmitting ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+                <label htmlFor="images-upload" className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg bg-card hover:bg-muted transition-colors ${isSubmitting || imagePreviews.length >= 5 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
                         <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</p>
+                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB. Max {5 - imagePreviews.length} more.</p>
                     </div>
-                    <Input id="images-upload" type="file" className="hidden" multiple accept="image/*" onChange={handleImageUpload} disabled={isSubmitting} />
+                    <Input 
+                      id="images-upload" 
+                      type="file" 
+                      className="hidden" 
+                      multiple 
+                      accept="image/*" 
+                      onChange={handleImageUpload} 
+                      disabled={isSubmitting || imagePreviews.length >= 5}
+                    />
                 </label>
             </div>
             {imagePreviews.length > 0 && (
               <div className="mt-2 grid grid-cols-3 sm:grid-cols-5 gap-2">
                 {imagePreviews.map((src, index) => (
-                  <div key={index} className="relative aspect-square rounded-md overflow-hidden border">
+                  <div key={index} className="relative aspect-square rounded-md overflow-hidden border group">
                     <img src={src} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-black/75"
+                      onClick={() => handleRemoveImage(index)}
+                      disabled={isSubmitting}
+                      aria-label="Remove image"
+                    >
+                      <XIcon className="h-4 w-4 text-white" />
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -367,3 +391,4 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
   );
 }
 
+    
