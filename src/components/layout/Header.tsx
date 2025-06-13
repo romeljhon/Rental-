@@ -160,8 +160,8 @@ export function Header() {
           <Button 
             variant={notificationFilter === 'all' ? 'secondary' : 'ghost'} 
             size="sm" 
-            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            onClick={() => setNotificationFilter('all')} 
+            onPointerDown={(e) => { e.stopPropagation(); }}
+            onClick={(e) => { e.stopPropagation(); setNotificationFilter('all');}} 
             className="flex-1 text-xs h-7"
           >
             All
@@ -169,8 +169,8 @@ export function Header() {
           <Button 
             variant={notificationFilter === 'unread' ? 'secondary' : 'ghost'} 
             size="sm" 
-            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            onClick={() => setNotificationFilter('unread')} 
+            onPointerDown={(e) => { e.stopPropagation(); }}
+            onClick={(e) => { e.stopPropagation(); setNotificationFilter('unread');}} 
             className="flex-1 text-xs h-7"
           >
             Unread
@@ -178,8 +178,8 @@ export function Header() {
           <Button 
             variant={notificationFilter === 'read' ? 'secondary' : 'ghost'} 
             size="sm" 
-            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            onClick={() => setNotificationFilter('read')} 
+            onPointerDown={(e) => { e.stopPropagation(); }}
+            onClick={(e) => { e.stopPropagation(); setNotificationFilter('read');}} 
             className="flex-1 text-xs h-7"
           >
             Read
@@ -354,3 +354,4 @@ export function Header() {
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
+
