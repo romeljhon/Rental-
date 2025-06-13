@@ -7,7 +7,7 @@ import type { RentalItem, UserProfile } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { UserCircle, PackageOpen, ArrowLeft } from 'lucide-react';
+import { UserCircle, PackageOpen, ArrowLeft, MessageSquare } from 'lucide-react';
 
 // Expanded Mock Data for this page
 const mockGlobalUsers: UserProfile[] = [
@@ -118,3 +118,4 @@ export default async function UserProfilePage({ params }: { params: { userId: st
 //     userId: user.id,
 //   }));
 // }
+
