@@ -2,7 +2,7 @@
 "use client";
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, LayoutGrid, PlusCircle, CalendarCheck, MessageCircle, Menu, X, Shield, Users, User, Bell, ChevronDown, Sun, Moon } from 'lucide-react';
+import { Home, LayoutGrid, PlusCircle, CalendarCheck, MessageCircle, Menu, X, Shield, Users, User, Bell, ChevronDown, Sun, Moon, ListChecks } from 'lucide-react';
 import type { NavItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetClose, SheetTrigger } from '@/components/ui/sheet';
@@ -14,6 +14,7 @@ import { ThemeToggleButton } from './ThemeToggleButton';
 const navItems: NavItem[] = [
   { href: '/', label: 'Browse', icon: LayoutGrid, exact: true },
   { href: '/items/new', label: 'Add Item', icon: PlusCircle },
+  { href: '/my-items', label: 'My Items', icon: ListChecks },
   { href: '/requests', label: 'My Requests', icon: CalendarCheck },
   { href: '/messages', label: 'Messages', icon: MessageCircle },
 ];
@@ -61,6 +62,9 @@ export function Header() {
     currentViewMode = viewModes[2];
   } else if (pathname.startsWith('/staff')) {
     currentViewMode = viewModes[1];
+  } else if (pathname.startsWith('/my-items')) {
+    // Keep user view for my-items, or add specific logic if needed
+    currentViewMode = viewModes[0];
   }
   
   const CurrentViewIcon = currentViewMode.icon;
@@ -76,7 +80,7 @@ export function Header() {
           }}
           className={cn(
             "cursor-pointer",
-            (pathname === mode.href || (mode.href === '/' && (pathname === '/' || pathname.startsWith('/items/')))) && "bg-accent/20"
+            (pathname === mode.href || (mode.href === '/' && (pathname === '/' || pathname.startsWith('/items/') || pathname.startsWith('/my-items')))) && "bg-accent/20"
           )}
         >
           <mode.icon className="mr-2 h-4 w-4" />
@@ -195,3 +199,4 @@ export function Header() {
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
+
