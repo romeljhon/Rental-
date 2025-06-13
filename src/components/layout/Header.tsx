@@ -70,8 +70,6 @@ export function Header() {
     markAllAsRead(currentActiveUserId);
   }
 
-  const isUserManagementPage = pathname.startsWith('/admin') || pathname.startsWith('/staff');
-
   const NavLink = ({ href, label, icon: Icon, exact }: NavItem) => {
     const isActive = exact ? pathname === href : pathname.startsWith(href);
     return (
@@ -156,9 +154,33 @@ export function Header() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <div className="flex justify-around p-2 border-b">
-          <Button variant={notificationFilter === 'all' ? 'secondary' : 'ghost'} size="sm" onClick={(e) => { e.stopPropagation(); setNotificationFilter('all');}} className="flex-1 text-xs h-7">All</Button>
-          <Button variant={notificationFilter === 'unread' ? 'secondary' : 'ghost'} size="sm" onClick={(e) => { e.stopPropagation(); setNotificationFilter('unread');}} className="flex-1 text-xs h-7">Unread</Button>
-          <Button variant={notificationFilter === 'read' ? 'secondary' : 'ghost'} size="sm" onClick={(e) => { e.stopPropagation(); setNotificationFilter('read');}} className="flex-1 text-xs h-7">Read</Button>
+          <Button 
+            variant={notificationFilter === 'all' ? 'secondary' : 'ghost'} 
+            size="sm" 
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => setNotificationFilter('all')} 
+            className="flex-1 text-xs h-7"
+          >
+            All
+          </Button>
+          <Button 
+            variant={notificationFilter === 'unread' ? 'secondary' : 'ghost'} 
+            size="sm" 
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => setNotificationFilter('unread')} 
+            className="flex-1 text-xs h-7"
+          >
+            Unread
+          </Button>
+          <Button 
+            variant={notificationFilter === 'read' ? 'secondary' : 'ghost'} 
+            size="sm" 
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => setNotificationFilter('read')} 
+            className="flex-1 text-xs h-7"
+          >
+            Read
+          </Button>
         </div>
         {notificationsToDisplay.length === 0 ? (
            <DropdownMenuItem disabled className="text-center text-muted-foreground py-4">
@@ -243,6 +265,8 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+           <NotificationBellDropdown />
+           <ThemeToggleButton />
         </nav>
 
         {/* Mobile Controls & Menu Setup */}
@@ -307,9 +331,7 @@ export function Header() {
                     <NavLink key={item.href} {...item} />
                   ))}
                 </nav>
-                <div className="p-6 border-t">
-                  <ThemeToggleButton /> {/* Desktop Theme toggle was here, mobile uses one in main bar */}
-                </div>
+                {/* Theme toggle for mobile is now in the main header bar, so not needed here */}
               </div>
             </SheetContent>
           </Sheet>
@@ -322,5 +344,3 @@ export function Header() {
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
-
-    
