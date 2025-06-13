@@ -10,8 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, Loader2, UploadCloud, Smartphone, Car, Home, Wrench, Shirt, Bike, Package } from 'lucide-react';
+import { Sparkles, Loader2, UploadCloud, Smartphone, Car, Home, Wrench, Shirt, Bike, Package, Truck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateListingDescription, type GenerateListingDescriptionInput } from '@/ai/flows/generate-listing-description';
 import type { RentalCategory, RentalItem } from '@/types';
@@ -26,6 +27,11 @@ const categories: RentalCategory[] = [
   { id: 'other', name: 'Other', icon: Package },
 ];
 
+const deliveryMethods = [
+  { id: 'pick-up', value: 'Pick Up', label: 'Pick Up', icon: Package },
+  { id: 'delivery', value: 'Delivery', label: 'Delivery', icon: Truck },
+] as const;
+
 const formSchema = z.object({
   itemName: z.string().min(3, { message: 'Item name must be at least 3 characters long.' }),
   category: z.string().min(1, { message: 'Please select a category.' }),
@@ -33,6 +39,7 @@ const formSchema = z.object({
   aiDetails: z.string().optional(),
   description: z.string().min(10, { message: 'Description must be at least 10 characters long.' }),
   pricePerDay: z.coerce.number().min(0.01, { message: 'Price must be a positive number.' }),
+  deliveryMethod: z.enum(['Pick Up', 'Delivery'], { required_error: 'Please select a delivery method.' }),
   images: z.any().optional(), 
 });
 
@@ -67,6 +74,7 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
     aiDetails: '',
     description: initialData?.description || '',
     pricePerDay: initialData?.pricePerDay || 0,
+    deliveryMethod: initialData?.deliveryMethod || 'Pick Up',
   };
 
   const form = useForm<NewItemFormValues>({
@@ -74,7 +82,6 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
     defaultValues: defaultValues,
   });
 
-  // Reset form if initialData changes (e.g. navigating between edit pages)
   useEffect(() => {
     if (initialData) {
       form.reset({
@@ -82,18 +89,17 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
         category: categories.find(c => c.name === initialData.category)?.id || '',
         description: initialData.description || '',
         pricePerDay: initialData.pricePerDay || 0,
-        aiKeywords: '', // AI fields are not pre-filled for edit in this iteration
+        deliveryMethod: initialData.deliveryMethod || 'Pick Up',
+        aiKeywords: '', 
         aiDetails: '',
-        // images: undefined // Images are not pre-filled for edit in this iteration
       });
-      // Pre-fill image previews if initialData.imageUrl exists (primary only for now)
       if (initialData.imageUrl) {
         setImagePreviews([initialData.imageUrl]);
       } else {
         setImagePreviews([]);
       }
     } else {
-      form.reset(defaultValues); // Reset to empty if no initialData (new item form)
+      form.reset(defaultValues); 
       setImagePreviews([]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -148,7 +154,6 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
         description: `${data.itemName} has been successfully listed.`,
       });
     }
-    // In a real app, you might redirect or clear form differently for edit vs new
     if (!isEditMode) {
       form.reset();
       setImagePreviews([]);
@@ -159,10 +164,7 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
     const files = event.target.files;
     if (files) {
       const newPreviews = Array.from(files).map(file => URL.createObjectURL(file));
-      // For edit mode, you might want to replace or add to existing images.
-      // For now, it will replace previews if new files are selected.
       setImagePreviews(newPreviews.slice(0, 5));
-      // form.setValue('images', files); // Actual file handling
     }
   };
 
@@ -210,7 +212,7 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
             {errors.category && <p className="text-sm text-destructive">{errors.category.message}</p>}
           </div>
 
-          {!isEditMode && ( // AI Assistant only for new items for now
+          {!isEditMode && ( 
             <Card className="bg-secondary/50 p-4">
               <CardHeader className="p-0 mb-2">
                 <CardTitle className="text-lg flex items-center gap-2 font-headline"><Sparkles className="w-5 h-5 text-accent" />AI Listing Assistant</CardTitle>
@@ -243,6 +245,37 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
             <Label htmlFor="pricePerDay">Price Per Day (₱)</Label>
             <Input id="pricePerDay" type="number" step="0.01" {...form.register('pricePerDay')} placeholder="e.g., 1000.00" />
             {errors.pricePerDay && <p className="text-sm text-destructive">{errors.pricePerDay.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Delivery Method</Label>
+            <Controller
+              name="deliveryMethod"
+              control={control}
+              render={({ field }) => (
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  className="flex flex-col sm:flex-row gap-4"
+                >
+                  {deliveryMethods.map((method) => {
+                    const MethodIcon = method.icon;
+                    return (
+                      <Label
+                        key={method.id}
+                        htmlFor={method.id}
+                        className="flex flex-1 items-center space-x-3 rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary cursor-pointer"
+                      >
+                        <RadioGroupItem value={method.value} id={method.id} />
+                        <MethodIcon className="h-5 w-5 text-primary" />
+                        <span>{method.label}</span>
+                      </Label>
+                    );
+                  })}
+                </RadioGroup>
+              )}
+            />
+            {errors.deliveryMethod && <p className="text-sm text-destructive">{errors.deliveryMethod.message}</p>}
           </div>
           
           <div className="space-y-2">

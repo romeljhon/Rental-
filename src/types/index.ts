@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from 'lucide-react';
 
 export interface NavItem {
@@ -28,6 +29,7 @@ export interface RentalItem {
   rating?: number; // Average rating (e.g., 1-5)
   reviewsCount?: number;
   features?: string[]; // e.g., ["WiFi", "Parking", "Pet-friendly"]
+  deliveryMethod?: 'Pick Up' | 'Delivery'; // New field
   // Could add specific fields based on category, e.g., mileage for cars
 }
 

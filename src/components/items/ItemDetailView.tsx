@@ -8,7 +8,7 @@ import type { RentalItem, UserProfile } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Star, MessageSquare, CheckCircle, Tag, Users, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, Star, MessageSquare, CheckCircle, Tag, Users, CalendarDays, ChevronLeft, ChevronRight, Package, Truck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DateRange } from 'react-day-picker';
 import { Separator } from '@/components/ui/separator';
@@ -37,7 +37,6 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
       });
       return;
     }
-    // Mock request logic
     console.log('Rental requested for:', item.name, 'from', selectedRange.from, 'to', selectedRange.to);
     toast({
       title: 'Rental Requested (Mock)',
@@ -53,10 +52,10 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
     setCurrentImageIndex((prevIndex) => (prevIndex - 1 + allImages.length) % allImages.length);
   };
 
+  const DeliveryIcon = item.deliveryMethod === 'Delivery' ? Truck : Package;
 
   return (
     <div className="grid md:grid-cols-3 gap-8">
-      {/* Image Gallery and Details */}
       <div className="md:col-span-2 space-y-6">
         <Card className="overflow-hidden shadow-xl">
           <CardHeader className="p-0 relative aspect-[16/10] bg-muted">
@@ -66,7 +65,7 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
                 src={allImages[currentImageIndex]}
                 alt={item.name}
                 layout="fill"
-                objectFit="contain" // 'cover' or 'contain'
+                objectFit="contain"
                 className="transition-opacity duration-300"
                 data-ai-hint={`${item.category} ${item.name} detail view`}
               />
@@ -94,7 +93,7 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
               </>
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                <MapPin className="w-16 h-16 text-gray-300" /> {/* Placeholder icon */}
+                <MapPin className="w-16 h-16 text-gray-300" /> 
               </div>
             )}
           </CardHeader>
@@ -108,10 +107,15 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
                 {item.availabilityStatus}
               </Badge>
             </div>
-            <div className="flex flex-wrap gap-2 text-sm text-muted-foreground mb-3">
+            <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground mb-3">
               <span className="flex items-center"><Tag className="w-4 h-4 mr-1.5 text-primary" /> {item.category}</span>
               {item.location && <span className="flex items-center"><MapPin className="w-4 h-4 mr-1.5 text-primary" /> {item.location}</span>}
               {item.rating && <span className="flex items-center"><Star className="w-4 h-4 mr-1.5 text-yellow-400 fill-yellow-400" /> {item.rating.toFixed(1)} ({item.reviewsCount} reviews)</span>}
+              {item.deliveryMethod && (
+                <span className="flex items-center">
+                  <DeliveryIcon className="w-4 h-4 mr-1.5 text-primary" /> {item.deliveryMethod}
+                </span>
+              )}
             </div>
              <Separator className="my-3"/>
             <CardDescription className="text-base leading-relaxed whitespace-pre-line">{item.description}</CardDescription>
@@ -162,9 +166,8 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
         </Card>
       </div>
 
-      {/* Booking Section */}
       <div className="md:col-span-1 space-y-6">
-        <Card className="sticky top-20 shadow-xl"> {/* Sticky for booking panel */}
+        <Card className="sticky top-20 shadow-xl"> 
           <CardHeader>
             <CardTitle className="font-headline text-2xl">Rent This Item</CardTitle>
             <div className="text-3xl font-bold text-primary flex items-center mt-1">
@@ -179,7 +182,6 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
                 <AvailabilityCalendar 
                   onDateSelect={handleDateSelect} 
                   pricePerDay={item.pricePerDay}
-                  // bookedDates={[new Date(2024, 6, 20), new Date(2024, 6, 21)]} // Example booked dates
                 />
                 <Button 
                   onClick={handleRequestToRent} 

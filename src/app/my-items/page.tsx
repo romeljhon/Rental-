@@ -6,7 +6,7 @@ import type { RentalItem, UserProfile } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Loader2, PackageOpen, ListChecks } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation'; // Added for navigation
+import { useRouter } from 'next/navigation'; 
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,34 +16,27 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-
-// This would typically be the ID of the logged-in user.
-// For mock purposes, we use the ID of the mockUser from other pages.
 const CURRENT_OWNER_ID = 'user1'; 
-
-// Using the same mock user and initial items for consistency
 const mockUser: UserProfile = { id: 'user1', name: 'John Doe', avatarUrl: 'https://placehold.co/100x100.png' };
 
 const allMockItems: RentalItem[] = [
-  { id: '1', name: 'Professional DSLR Camera', description: 'High-quality Canon DSLR, perfect for events and professional photography. Comes with two lenses.', category: 'Electronics', pricePerDay: 50, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockUser, location: 'New York, NY', rating: 4.8, reviewsCount: 25, features: ['24MP Sensor', '4K Video', 'Includes 18-55mm & 50mm lenses'] },
-  { id: '2', name: 'Mountain Bike - Full Suspension', description: 'Explore trails with this durable full-suspension mountain bike. Suitable for all terrains.', category: 'Sports & Outdoors', pricePerDay: 35, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockUser, location: 'Denver, CO', rating: 4.5, reviewsCount: 15, features: ['29-inch wheels', 'Hydraulic disc brakes', 'Lightweight aluminum frame'] },
-  { id: '3', name: 'Vintage Leather Jacket', description: 'Stylish vintage leather jacket, medium size. Adds a cool touch to any outfit.', category: 'Apparel', pricePerDay: 20, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Rented', owner: mockUser, location: 'Los Angeles, CA', rating: 4.2, reviewsCount: 8 },
-  { id: 'other_owner_item', name: 'Portable Projector', description: 'HD portable projector, great for movie nights.', category: 'Electronics', pricePerDay: 30, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: { id: 'user2', name: 'Jane Smith', avatarUrl: 'https://placehold.co/100x100.png'}, location: 'Chicago, IL', rating: 4.6, reviewsCount: 10 },
-  { id: '4', name: 'Portable Bluetooth Speaker', description: 'Loud and clear portable speaker with 12-hour battery life. Waterproof.', category: 'Electronics', pricePerDay: 15, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockUser, location: 'Chicago, IL', rating: 4.9, reviewsCount: 42 },
+  { id: '1', name: 'Professional DSLR Camera', description: 'High-quality Canon DSLR, perfect for events and professional photography. Comes with two lenses.', category: 'Electronics', pricePerDay: 50, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockUser, location: 'New York, NY', rating: 4.8, reviewsCount: 25, features: ['24MP Sensor', '4K Video', 'Includes 18-55mm & 50mm lenses'], deliveryMethod: 'Pick Up' },
+  { id: '2', name: 'Mountain Bike - Full Suspension', description: 'Explore trails with this durable full-suspension mountain bike. Suitable for all terrains.', category: 'Sports & Outdoors', pricePerDay: 35, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockUser, location: 'Denver, CO', rating: 4.5, reviewsCount: 15, features: ['29-inch wheels', 'Hydraulic disc brakes', 'Lightweight aluminum frame'], deliveryMethod: 'Pick Up' },
+  { id: '3', name: 'Vintage Leather Jacket', description: 'Stylish vintage leather jacket, medium size. Adds a cool touch to any outfit.', category: 'Apparel', pricePerDay: 20, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Rented', owner: mockUser, location: 'Los Angeles, CA', rating: 4.2, reviewsCount: 8, deliveryMethod: 'Delivery' },
+  { id: 'other_owner_item', name: 'Portable Projector', description: 'HD portable projector, great for movie nights.', category: 'Electronics', pricePerDay: 30, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: { id: 'user2', name: 'Jane Smith', avatarUrl: 'https://placehold.co/100x100.png'}, location: 'Chicago, IL', rating: 4.6, reviewsCount: 10, deliveryMethod: 'Pick Up' },
+  { id: '4', name: 'Portable Bluetooth Speaker', description: 'Loud and clear portable speaker with 12-hour battery life. Waterproof.', category: 'Electronics', pricePerDay: 15, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockUser, location: 'Chicago, IL', rating: 4.9, reviewsCount: 42, deliveryMethod: 'Delivery' },
 ];
 
 export default function MyItemsPage() {
   const [myItems, setMyItems] = useState<RentalItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const router = useRouter(); // Initialize router
+  const router = useRouter(); 
   const [itemToRemove, setItemToRemove] = useState<RentalItem | null>(null);
 
   useEffect(() => {
-    // Simulate API call to fetch items owned by the current user
     setTimeout(() => {
       const itemsOwnedByUser = allMockItems.filter(item => item.owner.id === CURRENT_OWNER_ID);
       setMyItems(itemsOwnedByUser);
@@ -57,14 +50,13 @@ export default function MyItemsPage() {
 
   const confirmRemoveItem = () => {
     if (!itemToRemove) return;
-    // Simulate API call for removal then update state
     setMyItems(prevItems => prevItems.filter(item => item.id !== itemToRemove.id));
     toast({
       title: 'Item Removed (Mock)',
       description: `"${itemToRemove.name}" has been removed from your listings.`,
       variant: 'destructive'
     });
-    setItemToRemove(null); // Close the dialog
+    setItemToRemove(null); 
   };
   
   const openRemoveConfirmation = (itemId: string) => {
@@ -73,7 +65,6 @@ export default function MyItemsPage() {
       setItemToRemove(item);
     }
   };
-
 
   if (isLoading) {
     return (
@@ -139,4 +130,3 @@ export default function MyItemsPage() {
     </div>
   );
 }
-
