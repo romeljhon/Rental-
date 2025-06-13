@@ -9,7 +9,8 @@ import { format } from 'date-fns';
 
 interface RequestCardProps {
   request: RentalRequest;
-  type: 'sent' | 'received'; // To control displayed actions
+  type: 'sent' | 'received'; 
+  currentViewingUserId: string | null; // ID of the user currently viewing the page
   onApprove?: (requestId: string) => void;
   onReject?: (requestId: string) => void;
   onCancel?: (requestId: string) => void;
@@ -19,7 +20,7 @@ interface RequestCardProps {
 const statusColors: Record<RentalRequest['status'], string> = {
   Pending: 'bg-yellow-500/80 hover:bg-yellow-500/90 text-yellow-foreground',
   Approved: 'bg-green-500/80 hover:bg-green-500/90 text-green-foreground',
-  ReceiptConfirmed: 'bg-sky-500/80 hover:bg-sky-500/90 text-sky-foreground', // New color for ReceiptConfirmed
+  ReceiptConfirmed: 'bg-sky-500/80 hover:bg-sky-500/90 text-sky-foreground',
   Rejected: 'bg-red-500/80 hover:bg-red-500/90 text-red-foreground',
   Cancelled: 'bg-gray-500/80 hover:bg-gray-500/90 text-gray-foreground',
   Completed: 'bg-blue-500/80 hover:bg-blue-500/90 text-blue-foreground',
@@ -29,7 +30,7 @@ const statusColors: Record<RentalRequest['status'], string> = {
 const statusIcons: Record<RentalRequest['status'], React.ElementType> = {
   Pending: Hourglass,
   Approved: Check,
-  ReceiptConfirmed: PackageCheck, // New icon
+  ReceiptConfirmed: PackageCheck,
   Rejected: X,
   Cancelled: X,
   Completed: Check,
@@ -37,8 +38,11 @@ const statusIcons: Record<RentalRequest['status'], React.ElementType> = {
 };
 
 
-export function RequestCard({ request, type, onApprove, onReject, onCancel, onConfirmReceipt }: RequestCardProps) {
+export function RequestCard({ request, type, currentViewingUserId, onApprove, onReject, onCancel, onConfirmReceipt }: RequestCardProps) {
   const StatusIcon = statusIcons[request.status];
+  const isOwnerViewing = type === 'received' && currentViewingUserId === request.owner.id;
+  const isRequesterViewing = type === 'sent' && currentViewingUserId === request.requester.id;
+
   return (
     <Card className="shadow-md hover:shadow-lg transition-shadow duration-200">
       <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-3">
@@ -75,7 +79,7 @@ export function RequestCard({ request, type, onApprove, onReject, onCancel, onCo
       </CardHeader>
       
       <CardFooter className="pt-2 pb-4 flex justify-end space-x-2">
-        {type === 'received' && request.status === 'Pending' && onApprove && onReject && (
+        {isOwnerViewing && request.status === 'Pending' && onApprove && onReject && (
           <>
             <Button variant="outline" size="sm" onClick={() => onReject(request.id)} className="border-destructive text-destructive hover:bg-destructive/10">
               <X className="w-4 h-4 mr-1.5" /> Reject
@@ -85,12 +89,12 @@ export function RequestCard({ request, type, onApprove, onReject, onCancel, onCo
             </Button>
           </>
         )}
-        {type === 'sent' && request.status === 'Approved' && onConfirmReceipt && (
+        {isRequesterViewing && request.status === 'Approved' && onConfirmReceipt && (
            <Button size="sm" onClick={() => onConfirmReceipt(request.id)} className="bg-sky-600 hover:bg-sky-700 text-white">
              <PackageCheck className="w-4 h-4 mr-1.5" /> Confirm Item Receipt
            </Button>
         )}
-        {(request.status === 'Pending' || request.status === 'Approved') && onCancel && (
+        {(isRequesterViewing || isOwnerViewing) && (request.status === 'Pending' || request.status === 'Approved') && onCancel && (
            <Button variant="ghost" size="sm" onClick={() => onCancel(request.id)} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
              <X className="w-4 h-4 mr-1.5" /> Cancel Request
            </Button>

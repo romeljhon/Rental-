@@ -2,13 +2,14 @@
 "use client";
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, LayoutGrid, PlusCircle, CalendarCheck, MessageCircle, Menu, X, Shield, Users, User, Bell, ChevronDown, Sun, Moon, ListChecks } from 'lucide-react';
-import type { NavItem } from '@/types';
+import { Home, LayoutGrid, PlusCircle, CalendarCheck, MessageCircle, Menu, X, Shield, Users, User, Bell, ChevronDown, Sun, Moon, ListChecks, LogOut, UserCog } from 'lucide-react';
+import type { NavItem, UserProfile } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetClose, SheetTrigger } from '@/components/ui/sheet';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import React from 'react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import React, { useState, useEffect } from 'react';
 import { ThemeToggleButton } from './ThemeToggleButton';
+import { getActiveUserProfile, setActiveUserId, ALL_MOCK_USERS } from '@/lib/auth';
 
 
 const navItems: NavItem[] = [
@@ -29,6 +30,19 @@ export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [activeUser, setActiveUser] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    setActiveUser(getActiveUserProfile());
+  }, [pathname]); // Re-check active user on path change, useful after router.refresh()
+
+  const handleUserSwitch = (userId: string) => {
+    setActiveUserId(userId);
+    setActiveUser(ALL_MOCK_USERS.find(u => u.id === userId) || null);
+    setIsMobileMenuOpen(false); // Close mobile menu if open
+    router.refresh(); // Force re-fetch of server components & re-run client effects
+  };
+
 
   const isUserManagementPage = pathname.startsWith('/admin') || pathname.startsWith('/staff');
 
@@ -57,14 +71,11 @@ export function Header() {
     { label: 'Admin View', icon: Shield, href: '/admin' },
   ];
 
-  let currentViewMode: ViewMode = viewModes[0]; // Default to User View
+  let currentViewMode: ViewMode = viewModes[0]; 
   if (pathname.startsWith('/admin')) {
     currentViewMode = viewModes[2];
   } else if (pathname.startsWith('/staff')) {
     currentViewMode = viewModes[1];
-  } else if (pathname.startsWith('/my-items')) {
-    // Keep user view for my-items, or add specific logic if needed
-    currentViewMode = viewModes[0];
   }
   
   const CurrentViewIcon = currentViewMode.icon;
@@ -99,7 +110,6 @@ export function Header() {
           <span className="text-2xl font-bold text-primary font-headline">RentalEase</span>
         </Link>
 
-        {/* Desktop Navigation */}
         <nav className="hidden sm:flex items-center space-x-1">
           {navItems.map((item) => (
             <NavLink key={item.href} {...item} />
@@ -116,6 +126,29 @@ export function Header() {
               {renderViewSwitcherItems(false)}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {activeUser && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-foreground hover:bg-accent/10 hover:text-accent-foreground">
+                  <UserCog className="h-4 w-4 mr-2" />
+                  {activeUser.name.split('(')[0].trim()} {/* Show name before parenthesis */}
+                  <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Switch User</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {ALL_MOCK_USERS.map(user => (
+                  <DropdownMenuItem key={user.id} onClick={() => handleUserSwitch(user.id)} disabled={activeUser.id === user.id}>
+                    <User className="mr-2 h-4 w-4" />
+                    {user.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
           <Button variant="ghost" size="icon" className="relative text-foreground hover:text-primary hover:bg-accent/10">
             <Bell className="h-5 w-5" />
             {isUserManagementPage && ( 
@@ -126,7 +159,6 @@ export function Header() {
           <ThemeToggleButton />
         </nav>
 
-        {/* Mobile Navigation */}
         <div className="sm:hidden flex items-center gap-1">
           <ThemeToggleButton />
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -166,6 +198,27 @@ export function Header() {
                       {renderViewSwitcherItems(true)}
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  {activeUser && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-foreground mt-2">
+                            <UserCog className="h-4 w-4 mr-2" />
+                            {activeUser.name.split('(')[0].trim()}
+                            <ChevronDown className="h-4 w-4 ml-auto opacity-70" />
+                        </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-[calc(100vw-4rem)] max-w-[calc(theme(maxWidth.xs)-2rem)] sm:w-auto">
+                        <DropdownMenuLabel>Switch User</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {ALL_MOCK_USERS.map(user => (
+                            <DropdownMenuItem key={user.id} onClick={() => handleUserSwitch(user.id)} disabled={activeUser.id === user.id}>
+                            <User className="mr-2 h-4 w-4" />
+                            {user.name}
+                            </DropdownMenuItem>
+                        ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
                 <nav className="flex-grow p-6 flex flex-col space-y-2">
                   {navItems.map((item) => (
@@ -175,7 +228,6 @@ export function Header() {
                       'flex items-center gap-2 justify-start w-full sm:w-auto text-sm text-foreground hover:bg-accent/10 hover:text-accent-foreground relative'
                     )}
                     onClick={() => {
-                        // Placeholder for notification action
                         setIsMobileMenuOpen(false);
                       }} 
                     >
@@ -195,8 +247,6 @@ export function Header() {
   );
 }
 
-// Helper needed for Button className
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
-
