@@ -8,7 +8,7 @@ import type { RentalItem, UserProfile } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, MapPin, Star, MessageSquare, CheckCircle, Tag, Users, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, Star, MessageSquare, CheckCircle, Tag, Users, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DateRange } from 'react-day-picker';
 import { Separator } from '@/components/ui/separator';
@@ -168,7 +168,7 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
           <CardHeader>
             <CardTitle className="font-headline text-2xl">Rent This Item</CardTitle>
             <div className="text-3xl font-bold text-primary flex items-center mt-1">
-              <DollarSign className="w-7 h-7 mr-1" />
+              <span className="mr-1">₱</span>
               {item.pricePerDay.toFixed(2)}
               <span className="text-sm text-muted-foreground font-normal ml-1">/ day</span>
             </div>

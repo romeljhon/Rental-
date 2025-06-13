@@ -1,7 +1,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { DollarSign, MapPin, Tag, Star, Eye, Edit, Trash2 } from 'lucide-react';
+import { MapPin, Tag, Star, Eye, Edit, Trash2 } from 'lucide-react';
 import type { RentalItem } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -59,7 +59,7 @@ export function ItemCard({ item, onEdit, onRemove }: ItemCardProps) {
       </CardContent>
       <CardFooter className="p-4 flex items-center justify-between border-t">
         <div className="flex items-center font-semibold text-primary">
-          <DollarSign className="w-4 h-4 mr-1" />
+          <span className="mr-1">₱</span>
           {item.pricePerDay} <span className="text-xs text-muted-foreground ml-1">/ day</span>
         </div>
         <div className="flex items-center gap-1">

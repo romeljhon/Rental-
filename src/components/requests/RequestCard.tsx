@@ -1,9 +1,10 @@
+
 import Image from 'next/image';
 import type { RentalRequest } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, Check, X, Hourglass, DollarSign } from 'lucide-react';
+import { CalendarDays, Check, X, Hourglass } from 'lucide-react'; // DollarSign removed
 import { format } from 'date-fns';
 
 interface RequestCardProps {
@@ -23,13 +24,14 @@ const statusColors: Record<RentalRequest['status'], string> = {
   AwaitingPayment: 'bg-orange-500/80 hover:bg-orange-500/90 text-orange-foreground',
 };
 
+// AwaitingPayment uses Hourglass temporarily as DollarSign was removed for general currency icon
 const statusIcons: Record<RentalRequest['status'], React.ElementType> = {
   Pending: Hourglass,
   Approved: Check,
   Rejected: X,
   Cancelled: X,
   Completed: Check,
-  AwaitingPayment: DollarSign,
+  AwaitingPayment: Hourglass, 
 };
 
 
@@ -59,7 +61,7 @@ export function RequestCard({ request, type, onApprove, onReject, onCancel }: Re
               {type === 'sent' ? `To: ${request.owner.name}` : `From: ${request.requester.name}`}
             </p>
              <p className="flex items-center font-semibold text-primary">
-              <DollarSign className="w-4 h-4 mr-1" />
+              <span className="mr-1">₱</span>
               {request.totalPrice.toFixed(2)}
             </p>
           </div>

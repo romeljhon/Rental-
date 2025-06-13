@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -75,7 +76,7 @@ export function AvailabilityCalendar({ onDateSelect, bookedDates = [], pricePerD
             </p>
             {range.to && (
                <p className="font-semibold mt-2 text-primary">
-                 Total Price: ${calculateTotalPrice().toFixed(2)}
+                 Total Price: ₱{calculateTotalPrice().toFixed(2)}
                </p>
             )}
           </div>

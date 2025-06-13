@@ -240,8 +240,8 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="pricePerDay">Price Per Day ($)</Label>
-            <Input id="pricePerDay" type="number" step="0.01" {...form.register('pricePerDay')} placeholder="e.g., 25.00" />
+            <Label htmlFor="pricePerDay">Price Per Day (₱)</Label>
+            <Input id="pricePerDay" type="number" step="0.01" {...form.register('pricePerDay')} placeholder="e.g., 1000.00" />
             {errors.pricePerDay && <p className="text-sm text-destructive">{errors.pricePerDay.message}</p>}
           </div>
           
@@ -279,4 +279,3 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
     </Card>
   );
 }
-
