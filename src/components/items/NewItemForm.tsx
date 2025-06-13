@@ -1,6 +1,7 @@
+
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,7 +14,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Sparkles, Loader2, UploadCloud, Smartphone, Car, Home, Wrench, Shirt, Bike, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateListingDescription, type GenerateListingDescriptionInput } from '@/ai/flows/generate-listing-description';
-import type { RentalCategory } from '@/types';
+import type { RentalCategory, RentalItem } from '@/types';
 
 const categories: RentalCategory[] = [
   { id: 'electronics', name: 'Electronics', icon: Smartphone },
@@ -32,10 +33,14 @@ const formSchema = z.object({
   aiDetails: z.string().optional(),
   description: z.string().min(10, { message: 'Description must be at least 10 characters long.' }),
   pricePerDay: z.coerce.number().min(0.01, { message: 'Price must be a positive number.' }),
-  images: z.any().optional(), // For file input, actual handling would be more complex
+  images: z.any().optional(), 
 });
 
 type NewItemFormValues = z.infer<typeof formSchema>;
+
+interface NewItemFormProps {
+  initialData?: RentalItem; 
+}
 
 async function handleGenerateAIDescription(data: GenerateListingDescriptionInput) {
   try {
@@ -48,22 +53,52 @@ async function handleGenerateAIDescription(data: GenerateListingDescriptionInput
 }
 
 
-export function NewItemForm() {
+export function NewItemForm({ initialData }: NewItemFormProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  
+  const isEditMode = !!initialData;
+
+  const defaultValues = {
+    itemName: initialData?.name || '',
+    category: categories.find(c => c.name === initialData?.category)?.id || '',
+    aiKeywords: '',
+    aiDetails: '',
+    description: initialData?.description || '',
+    pricePerDay: initialData?.pricePerDay || 0,
+  };
 
   const form = useForm<NewItemFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      itemName: '',
-      category: '',
-      aiKeywords: '',
-      aiDetails: '',
-      description: '',
-      pricePerDay: 0,
-    },
+    defaultValues: defaultValues,
   });
+
+  // Reset form if initialData changes (e.g. navigating between edit pages)
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        itemName: initialData.name || '',
+        category: categories.find(c => c.name === initialData.category)?.id || '',
+        description: initialData.description || '',
+        pricePerDay: initialData.pricePerDay || 0,
+        aiKeywords: '', // AI fields are not pre-filled for edit in this iteration
+        aiDetails: '',
+        // images: undefined // Images are not pre-filled for edit in this iteration
+      });
+      // Pre-fill image previews if initialData.imageUrl exists (primary only for now)
+      if (initialData.imageUrl) {
+        setImagePreviews([initialData.imageUrl]);
+      } else {
+        setImagePreviews([]);
+      }
+    } else {
+      form.reset(defaultValues); // Reset to empty if no initialData (new item form)
+      setImagePreviews([]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData, form.reset]);
+
 
   const { control, handleSubmit, setValue, watch, formState: { errors } } = form;
   const watchedAiKeywords = watch('aiKeywords');
@@ -102,29 +137,44 @@ export function NewItemForm() {
 
   const onSubmit = (data: NewItemFormValues) => {
     console.log('Form submitted:', data);
-    // TODO: Implement actual item creation logic (e.g., API call)
-    toast({
-      title: 'Item Listed (Mock)!',
-      description: `${data.itemName} has been successfully listed.`,
-    });
-    form.reset();
-    setImagePreviews([]);
+    if (isEditMode) {
+      toast({
+        title: 'Item Updated (Mock)!',
+        description: `${data.itemName} has been successfully updated.`,
+      });
+    } else {
+      toast({
+        title: 'Item Listed (Mock)!',
+        description: `${data.itemName} has been successfully listed.`,
+      });
+    }
+    // In a real app, you might redirect or clear form differently for edit vs new
+    if (!isEditMode) {
+      form.reset();
+      setImagePreviews([]);
+    }
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
       const newPreviews = Array.from(files).map(file => URL.createObjectURL(file));
-      setImagePreviews(prev => [...prev, ...newPreviews].slice(0, 5)); // Limit to 5 previews
-      // In a real app, you'd handle file objects for form.setValue('images', files);
+      // For edit mode, you might want to replace or add to existing images.
+      // For now, it will replace previews if new files are selected.
+      setImagePreviews(newPreviews.slice(0, 5));
+      // form.setValue('images', files); // Actual file handling
     }
   };
 
   return (
     <Card className="max-w-2xl mx-auto shadow-xl">
       <CardHeader>
-        <CardTitle className="text-3xl font-headline text-primary">List Your Item</CardTitle>
-        <CardDescription>Fill in the details below to rent out your item. Use our AI assistant to help craft the perfect description!</CardDescription>
+        <CardTitle className="text-3xl font-headline text-primary">
+          {isEditMode ? `Edit Item: ${initialData?.name}` : 'List Your Item'}
+        </CardTitle>
+        <CardDescription>
+          {isEditMode ? 'Update the details for your item.' : 'Fill in the details below to rent out your item. Use our AI assistant to help craft the perfect description!'}
+        </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-6">
@@ -140,7 +190,7 @@ export function NewItemForm() {
               name="category"
               control={control}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                   <SelectTrigger id="category">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
@@ -160,26 +210,28 @@ export function NewItemForm() {
             {errors.category && <p className="text-sm text-destructive">{errors.category.message}</p>}
           </div>
 
-          <Card className="bg-secondary/50 p-4">
-            <CardHeader className="p-0 mb-2">
-              <CardTitle className="text-lg flex items-center gap-2 font-headline"><Sparkles className="w-5 h-5 text-accent" />AI Listing Assistant</CardTitle>
-              <CardDescription className="text-xs">Provide some keywords and details, and let AI write a compelling description.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0 space-y-3">
-              <div className="space-y-1">
-                <Label htmlFor="aiKeywords">Keywords for AI</Label>
-                <Input id="aiKeywords" {...form.register('aiKeywords')} placeholder="e.g., durable, lightweight, 4K video, beginner-friendly" />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="aiDetails">Specific Details for AI</Label>
-                <Textarea id="aiDetails" {...form.register('aiDetails')} placeholder="e.g., Barely used, comes with original packaging and all accessories. Small scratch on the side (see photos)." rows={3}/>
-              </div>
-              <Button type="button" onClick={onAIDescriptionGenerate} disabled={isGenerating} variant="outline" className="w-full sm:w-auto">
-                {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                Generate Description
-              </Button>
-            </CardContent>
-          </Card>
+          {!isEditMode && ( // AI Assistant only for new items for now
+            <Card className="bg-secondary/50 p-4">
+              <CardHeader className="p-0 mb-2">
+                <CardTitle className="text-lg flex items-center gap-2 font-headline"><Sparkles className="w-5 h-5 text-accent" />AI Listing Assistant</CardTitle>
+                <CardDescription className="text-xs">Provide some keywords and details, and let AI write a compelling description.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-0 space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="aiKeywords">Keywords for AI</Label>
+                  <Input id="aiKeywords" {...form.register('aiKeywords')} placeholder="e.g., durable, lightweight, 4K video, beginner-friendly" />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="aiDetails">Specific Details for AI</Label>
+                  <Textarea id="aiDetails" {...form.register('aiDetails')} placeholder="e.g., Barely used, comes with original packaging and all accessories. Small scratch on the side (see photos)." rows={3}/>
+                </div>
+                <Button type="button" onClick={onAIDescriptionGenerate} disabled={isGenerating} variant="outline" className="w-full sm:w-auto">
+                  {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                  Generate Description
+                </Button>
+              </CardContent>
+            </Card>
+          )}
           
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
@@ -220,10 +272,11 @@ export function NewItemForm() {
         </CardContent>
         <CardFooter>
           <Button type="submit" className="w-full" size="lg">
-            List My Item
+            {isEditMode ? 'Update Item' : 'List My Item'}
           </Button>
         </CardFooter>
       </form>
     </Card>
   );
 }
+

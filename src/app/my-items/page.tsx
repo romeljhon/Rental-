@@ -6,6 +6,7 @@ import type { RentalItem, UserProfile } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Loader2, PackageOpen, ListChecks } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation'; // Added for navigation
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +39,7 @@ export default function MyItemsPage() {
   const [myItems, setMyItems] = useState<RentalItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const router = useRouter(); // Initialize router
   const [itemToRemove, setItemToRemove] = useState<RentalItem | null>(null);
 
   useEffect(() => {
@@ -50,17 +52,12 @@ export default function MyItemsPage() {
   }, []);
 
   const handleEditItem = (itemId: string) => {
-    const item = myItems.find(i => i.id === itemId);
-    // In a real app, you would navigate to an edit page:
-    // router.push(`/items/${itemId}/edit`);
-    toast({
-      title: 'Edit Item (Mock)',
-      description: `You clicked edit for "${item?.name || 'this item'}". This would normally take you to an edit form.`,
-    });
+    router.push(`/items/${itemId}/edit`);
   };
 
   const confirmRemoveItem = () => {
     if (!itemToRemove) return;
+    // Simulate API call for removal then update state
     setMyItems(prevItems => prevItems.filter(item => item.id !== itemToRemove.id));
     toast({
       title: 'Item Removed (Mock)',
@@ -115,7 +112,7 @@ export default function MyItemsPage() {
           <PackageOpen className="mx-auto h-16 w-16 text-muted-foreground opacity-50 mb-4" />
           <h2 className="text-2xl font-semibold text-muted-foreground mb-2">No Items Listed Yet</h2>
           <p className="text-foreground mb-4">You haven't listed any items for rent. Add your first item today!</p>
-          <Button variant="default" size="lg" onClick={() => { /* Navigate to /items/new */ window.location.href = '/items/new'; }}>
+          <Button variant="default" size="lg" onClick={() => router.push('/items/new')}>
             List an Item
           </Button>
         </div>
@@ -142,3 +139,4 @@ export default function MyItemsPage() {
     </div>
   );
 }
+
