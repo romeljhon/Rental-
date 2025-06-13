@@ -2,10 +2,10 @@
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, LayoutGrid, PlusCircle, CalendarCheck, MessageCircle, Menu, X, Shield, Users } from 'lucide-react';
+import { Home, LayoutGrid, PlusCircle, CalendarCheck, MessageCircle, Menu, X, Shield, Users, Bell } from 'lucide-react';
 import type { NavItem } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetClose } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle, SheetClose, SheetTrigger } from '@/components/ui/sheet';
 import React from 'react';
 
 const navItems: NavItem[] = [
@@ -13,6 +13,9 @@ const navItems: NavItem[] = [
   { href: '/items/new', label: 'Add Item', icon: PlusCircle },
   { href: '/requests', label: 'My Requests', icon: CalendarCheck },
   { href: '/messages', label: 'Messages', icon: MessageCircle },
+];
+
+const adminStaffNavItems: NavItem[] = [
   { href: '/staff', label: 'Staff', icon: Users },
   { href: '/admin', label: 'Admin', icon: Shield },
 ];
@@ -20,6 +23,8 @@ const navItems: NavItem[] = [
 export function Header() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+
+  const isUserManagementPage = pathname.startsWith('/admin') || pathname.startsWith('/staff');
 
   const NavLink = ({ href, label, icon: Icon, exact }: NavItem) => {
     const isActive = exact ? pathname === href : pathname.startsWith(href);
@@ -51,10 +56,20 @@ export function Header() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden sm:flex items-center space-x-2">
+        <nav className="hidden sm:flex items-center space-x-1">
           {navItems.map((item) => (
             <NavLink key={item.href} {...item} />
           ))}
+          {adminStaffNavItems.map((item) => (
+            <NavLink key={item.href} {...item} />
+          ))}
+          <Button variant="ghost" size="icon" className="relative text-foreground hover:text-primary hover:bg-accent/10">
+            <Bell className="h-5 w-5" />
+            {isUserManagementPage && ( // Simulated notification indicator
+              <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-accent ring-2 ring-background" />
+            )}
+            <span className="sr-only">Notifications</span>
+          </Button>
         </nav>
 
         {/* Mobile Navigation */}
@@ -80,10 +95,24 @@ export function Header() {
                    </Button>
                 </SheetClose>
               </div>
-              <nav className="flex flex-col space-y-3">
+              <nav className="flex flex-col space-y-2">
                 {navItems.map((item) => (
                   <NavLink key={item.href} {...item} />
                 ))}
+                {adminStaffNavItems.map((item) => (
+                  <NavLink key={item.href} {...item} />
+                ))}
+                 <Button variant="ghost" className={cn(
+                    'flex items-center gap-2 justify-start w-full sm:w-auto text-sm text-foreground hover:bg-accent/10 hover:text-accent-foreground relative'
+                  )}
+                  onClick={() => setIsMobileMenuOpen(false)} // Assuming it navigates or opens a notification panel
+                  >
+                  <Bell className="h-4 w-4" />
+                  Notifications
+                  {isUserManagementPage && ( // Simulated notification indicator
+                    <span className="absolute top-1/2 right-3 -translate-y-1/2 block h-2 w-2 rounded-full bg-accent" />
+                  )}
+                </Button>
               </nav>
             </SheetContent>
           </Sheet>
