@@ -1,4 +1,6 @@
 
+"use client";
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { MapPin, Star, Eye, Edit, Trash2, Package, Truck, ListChecks, CalendarClock } from 'lucide-react';
@@ -15,6 +17,24 @@ interface ItemCardProps {
 }
 
 export function ItemCard({ item, onEdit, onRemove }: ItemCardProps) {
+  const [availabilityMessage, setAvailabilityMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (item.availabilityStatus === 'Rented' && item.availableFromDate) {
+      const currentDate = new Date();
+      currentDate.setHours(0, 0, 0, 0);
+      const dateFromItem = new Date(item.availableFromDate);
+      dateFromItem.setHours(0, 0, 0, 0);
+
+      if (currentDate >= dateFromItem) {
+        setAvailabilityMessage(`Due: ${format(dateFromItem, 'MMM d')}. Pending confirm.`);
+      } else {
+        setAvailabilityMessage(`Back: ${format(dateFromItem, 'MMM d')}`);
+      }
+    } else {
+      setAvailabilityMessage(null);
+    }
+  }, [item.availabilityStatus, item.availableFromDate]);
 
   const renderDeliveryIcon = () => {
     if (!item.deliveryMethod) return null;
@@ -59,10 +79,10 @@ export function ItemCard({ item, onEdit, onRemove }: ItemCardProps) {
             <Badge variant={item.availabilityStatus === 'Available' ? 'default' : 'destructive'} className="capitalize bg-opacity-80">
               {item.availabilityStatus}
             </Badge>
-            {item.availabilityStatus === 'Rented' && item.availableFromDate && (
+            {availabilityMessage && (
               <div className="text-xs text-muted-foreground mt-0.5 flex items-center justify-end">
                 <CalendarClock className="w-3 h-3 mr-1" />
-                Avail: {format(new Date(item.availableFromDate), 'MMM d')}
+                {availabilityMessage}
               </div>
             )}
           </div>

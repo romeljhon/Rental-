@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { AvailabilityCalendar } from '@/components/shared/AvailabilityCalendar';
@@ -25,6 +25,25 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
   const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(undefined);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [chosenDeliveryByRenter, setChosenDeliveryByRenter] = useState<'Pick Up' | 'Delivery' | null>(null);
+  const [detailedAvailabilityMessage, setDetailedAvailabilityMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (item.availabilityStatus === 'Rented' && item.availableFromDate) {
+      const currentDate = new Date();
+      currentDate.setHours(0, 0, 0, 0);
+      const dateFromItem = new Date(item.availableFromDate);
+      dateFromItem.setHours(0, 0, 0, 0);
+
+      if (currentDate >= dateFromItem) {
+        setDetailedAvailabilityMessage(`Expected back on ${format(dateFromItem, 'MMM d, yyyy')}. Availability pending owner confirmation.`);
+      } else {
+        setDetailedAvailabilityMessage(`Currently rented. Expected back on ${format(dateFromItem, 'MMM d, yyyy')}.`);
+      }
+    } else {
+      setDetailedAvailabilityMessage(null);
+    }
+  }, [item.availabilityStatus, item.availableFromDate]);
+
 
   const allImages = [item.imageUrl, ...(item.images || [])].filter(Boolean) as string[];
 
@@ -153,10 +172,10 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
                 <Badge variant={item.availabilityStatus === 'Available' ? 'default' : 'destructive'} className="text-sm capitalize py-1 px-3">
                   {item.availabilityStatus}
                 </Badge>
-                {item.availabilityStatus === 'Rented' && item.availableFromDate && (
-                  <p className="text-xs text-muted-foreground mt-1 flex items-center justify-end">
-                    <CalendarClock className="w-3.5 h-3.5 mr-1" />
-                    Available on: {format(new Date(item.availableFromDate), 'MMM d, yyyy')}
+                {item.availabilityStatus === 'Rented' && detailedAvailabilityMessage && (
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center justify-end gap-1">
+                    <CalendarClock className="w-3.5 h-3.5" />
+                    {detailedAvailabilityMessage}
                   </p>
                 )}
               </div>
@@ -268,13 +287,13 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
               <div className="p-4 text-center bg-muted rounded-md">
                 <p className="font-semibold text-lg text-destructive">
                   Currently {item.availabilityStatus}
-                  {item.availabilityStatus === 'Rented' && item.availableFromDate && (
+                  {item.availabilityStatus === 'Rented' && detailedAvailabilityMessage && (
                     <span className="block text-sm text-muted-foreground font-normal mt-1">
-                      Available on: {format(new Date(item.availableFromDate), 'MMM d, yyyy')}
+                       {detailedAvailabilityMessage}
                     </span>
                   )}
                 </p>
-                {item.availabilityStatus !== 'Rented' && (
+                {item.availabilityStatus !== 'Rented' && item.availabilityStatus !== 'Available' && (
                   <p className="text-sm text-muted-foreground">This item is not available for rent at the moment.</p>
                 )}
               </div>
