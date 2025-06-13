@@ -4,11 +4,13 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { AvailabilityCalendar } from '@/components/shared/AvailabilityCalendar';
-import type { RentalItem, UserProfile } from '@/types';
+import type { RentalItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Star, MessageSquare, CheckCircle, Tag, Users, CalendarDays, ChevronLeft, ChevronRight, Package, Truck } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { MapPin, Star, MessageSquare, CheckCircle, Tag, Users, CalendarDays, ChevronLeft, ChevronRight, Package, Truck, ListChecks } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DateRange } from 'react-day-picker';
 import { Separator } from '@/components/ui/separator';
@@ -21,6 +23,7 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
   const { toast } = useToast();
   const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(undefined);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [chosenDeliveryByRenter, setChosenDeliveryByRenter] = useState<'Pick Up' | 'Delivery' | null>(null);
 
   const allImages = [item.imageUrl, ...(item.images || [])].filter(Boolean) as string[];
 
@@ -37,10 +40,24 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
       });
       return;
     }
-    console.log('Rental requested for:', item.name, 'from', selectedRange.from, 'to', selectedRange.to);
+    if (item.deliveryMethod === 'Both' && !chosenDeliveryByRenter) {
+      toast({
+        title: 'Select Delivery Method',
+        description: 'Please choose a delivery or pick-up option.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    let requestDetails = `Your request for ${item.name} has been submitted.`;
+    if (chosenDeliveryByRenter) {
+      requestDetails += ` Chosen delivery: ${chosenDeliveryByRenter}.`;
+    }
+
+    console.log('Rental requested for:', item.name, 'from', selectedRange.from, 'to', selectedRange.to, 'delivery:', chosenDeliveryByRenter || item.deliveryMethod);
     toast({
       title: 'Rental Requested (Mock)',
-      description: `Your request for ${item.name} has been submitted.`,
+      description: requestDetails,
     });
   };
   
@@ -52,7 +69,33 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
     setCurrentImageIndex((prevIndex) => (prevIndex - 1 + allImages.length) % allImages.length);
   };
 
-  const DeliveryIcon = item.deliveryMethod === 'Delivery' ? Truck : Package;
+  const renderDeliveryMethodInfo = () => {
+    if (!item.deliveryMethod) return null;
+
+    switch (item.deliveryMethod) {
+      case 'Pick Up':
+        return <span className="flex items-center"><Package className="w-4 h-4 mr-1.5 text-primary" /> Pick Up Only</span>;
+      case 'Delivery':
+        return <span className="flex items-center"><Truck className="w-4 h-4 mr-1.5 text-primary" /> Delivery Only</span>;
+      case 'Both':
+        return (
+          <span className="flex items-center">
+            <Package className="w-4 h-4 mr-1 text-primary" />
+            <Truck className="w-4 h-4 mr-1.5 text-primary" />
+            Pick Up or Delivery
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const isRequestButtonDisabled = 
+    !selectedRange?.from || 
+    !selectedRange?.to ||
+    (item.availabilityStatus !== 'Available') ||
+    (item.deliveryMethod === 'Both' && !chosenDeliveryByRenter);
+
 
   return (
     <div className="grid md:grid-cols-3 gap-8">
@@ -111,11 +154,7 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
               <span className="flex items-center"><Tag className="w-4 h-4 mr-1.5 text-primary" /> {item.category}</span>
               {item.location && <span className="flex items-center"><MapPin className="w-4 h-4 mr-1.5 text-primary" /> {item.location}</span>}
               {item.rating && <span className="flex items-center"><Star className="w-4 h-4 mr-1.5 text-yellow-400 fill-yellow-400" /> {item.rating.toFixed(1)} ({item.reviewsCount} reviews)</span>}
-              {item.deliveryMethod && (
-                <span className="flex items-center">
-                  <DeliveryIcon className="w-4 h-4 mr-1.5 text-primary" /> {item.deliveryMethod}
-                </span>
-              )}
+              {renderDeliveryMethodInfo()}
             </div>
              <Separator className="my-3"/>
             <CardDescription className="text-base leading-relaxed whitespace-pre-line">{item.description}</CardDescription>
@@ -183,11 +222,32 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
                   onDateSelect={handleDateSelect} 
                   pricePerDay={item.pricePerDay}
                 />
+                {item.deliveryMethod === 'Both' && (
+                  <div className="mt-4 space-y-2">
+                    <Label className="font-semibold">Choose Delivery Option:</Label>
+                    <RadioGroup 
+                      value={chosenDeliveryByRenter || ""} 
+                      onValueChange={(value) => setChosenDeliveryByRenter(value as 'Pick Up' | 'Delivery')}
+                      className="flex flex-col gap-2"
+                    >
+                      <Label htmlFor="delivery-pickup-choice" className="flex items-center space-x-2 p-3 border rounded-md hover:bg-muted cursor-pointer [&:has([data-state=checked])]:border-primary">
+                        <RadioGroupItem value="Pick Up" id="delivery-pickup-choice" />
+                        <Package className="w-5 h-5 text-primary" /> 
+                        <span>Pick Up</span>
+                      </Label>
+                      <Label htmlFor="delivery-delivery-choice" className="flex items-center space-x-2 p-3 border rounded-md hover:bg-muted cursor-pointer [&:has([data-state=checked])]:border-primary">
+                        <RadioGroupItem value="Delivery" id="delivery-delivery-choice" />
+                        <Truck className="w-5 h-5 text-primary" />
+                        <span>Delivery</span>
+                      </Label>
+                    </RadioGroup>
+                  </div>
+                )}
                 <Button 
                   onClick={handleRequestToRent} 
                   className="w-full mt-6 bg-accent hover:bg-accent/90 text-accent-foreground" 
                   size="lg"
-                  disabled={!selectedRange?.from || !selectedRange?.to}
+                  disabled={isRequestButtonDisabled}
                 >
                   <CalendarDays className="w-5 h-5 mr-2" />
                   Request to Rent

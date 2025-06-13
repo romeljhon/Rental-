@@ -29,7 +29,7 @@ export interface RentalItem {
   rating?: number; // Average rating (e.g., 1-5)
   reviewsCount?: number;
   features?: string[]; // e.g., ["WiFi", "Parking", "Pet-friendly"]
-  deliveryMethod?: 'Pick Up' | 'Delivery'; // New field
+  deliveryMethod?: 'Pick Up' | 'Delivery' | 'Both'; // Updated field
   // Could add specific fields based on category, e.g., mileage for cars
 }
 
@@ -51,6 +51,7 @@ export interface RentalRequest {
   status: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'Completed' | 'AwaitingPayment';
   totalPrice: number;
   requestedAt: Date;
+  chosenDeliveryMethod?: 'Pick Up' | 'Delivery'; // New field for renter's choice
   // messageThreadId?: string; // Link to a messaging thread
 }
 

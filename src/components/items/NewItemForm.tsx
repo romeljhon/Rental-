@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, Loader2, UploadCloud, Smartphone, Car, Home, Wrench, Shirt, Bike, Package, Truck } from 'lucide-react';
+import { Sparkles, Loader2, UploadCloud, Smartphone, Car, Home, Wrench, Shirt, Bike, Package, Truck, ListChecks } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateListingDescription, type GenerateListingDescriptionInput } from '@/ai/flows/generate-listing-description';
 import type { RentalCategory, RentalItem } from '@/types';
@@ -28,9 +28,12 @@ const categories: RentalCategory[] = [
 ];
 
 const deliveryMethods = [
-  { id: 'pick-up', value: 'Pick Up', label: 'Pick Up', icon: Package },
-  { id: 'delivery', value: 'Delivery', label: 'Delivery', icon: Truck },
+  { id: 'pick-up', value: 'Pick Up', label: 'Pick Up Only', icon: Package },
+  { id: 'delivery', value: 'Delivery Only', label: 'Delivery Only', icon: Truck },
+  { id: 'both', value: 'Both', label: 'Pick Up & Delivery', icon: ListChecks }, // Using ListChecks as a generic "options" icon
 ] as const;
+
+type DeliveryMethodValue = typeof deliveryMethods[number]['value'];
 
 const formSchema = z.object({
   itemName: z.string().min(3, { message: 'Item name must be at least 3 characters long.' }),
@@ -39,7 +42,7 @@ const formSchema = z.object({
   aiDetails: z.string().optional(),
   description: z.string().min(10, { message: 'Description must be at least 10 characters long.' }),
   pricePerDay: z.coerce.number().min(0.01, { message: 'Price must be a positive number.' }),
-  deliveryMethod: z.enum(['Pick Up', 'Delivery'], { required_error: 'Please select a delivery method.' }),
+  deliveryMethod: z.enum(['Pick Up', 'Delivery', 'Both'], { required_error: 'Please select a delivery method.' }),
   images: z.any().optional(), 
 });
 
@@ -89,7 +92,7 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
         category: categories.find(c => c.name === initialData.category)?.id || '',
         description: initialData.description || '',
         pricePerDay: initialData.pricePerDay || 0,
-        deliveryMethod: initialData.deliveryMethod || 'Pick Up',
+        deliveryMethod: initialData.deliveryMethod as DeliveryMethodValue || 'Pick Up',
         aiKeywords: '', 
         aiDetails: '',
       });
@@ -263,10 +266,10 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
                     return (
                       <Label
                         key={method.id}
-                        htmlFor={method.id}
+                        htmlFor={`delivery-${method.id}`}
                         className="flex flex-1 items-center space-x-3 rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground [&:has([data-state=checked])]:border-primary cursor-pointer"
                       >
-                        <RadioGroupItem value={method.value} id={method.id} />
+                        <RadioGroupItem value={method.value} id={`delivery-${method.id}`} />
                         <MethodIcon className="h-5 w-5 text-primary" />
                         <span>{method.label}</span>
                       </Label>
