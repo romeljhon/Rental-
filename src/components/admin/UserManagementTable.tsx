@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MoreHorizontal, User, Edit3, UserX, UserCheck, ShieldAlert, ShieldCheck, Mail, CalendarPlus } from 'lucide-react';
+import { MoreHorizontal, User, Edit3, UserX, UserCheck, ShieldAlert, ShieldCheck, Mail, CalendarPlus, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
