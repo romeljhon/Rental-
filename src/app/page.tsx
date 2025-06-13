@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useEffect } from 'react';
 import { ItemCard } from '@/components/items/ItemCard';
@@ -22,7 +23,7 @@ export default function HomePage() {
   const [filteredItems, setFilteredItems] = useState<RentalItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState(''); // Empty string means "all" or no filter initially
   const [sortOption, setSortOption] = useState('relevance');
 
   useEffect(() => {
@@ -44,7 +45,9 @@ export default function HomePage() {
       );
     }
 
-    if (category) {
+    // If category is set and it's not "all", then filter by it.
+    // An empty string for category (initial or cleared state) also means no category filter.
+    if (category && category !== 'all') {
       currentItems = currentItems.filter(item => item.category.toLowerCase().replace(/\s*&\s*/, '').replace(/\s+/g, '') === category);
     }
     

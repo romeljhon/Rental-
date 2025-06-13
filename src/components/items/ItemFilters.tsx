@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from 'react';
@@ -25,7 +26,7 @@ interface ItemFiltersProps {
 
 export function ItemFilters({ onSearchChange, onCategoryChange, onSortChange }: ItemFiltersProps) {
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [selectedCategory, setSelectedCategory] = React.useState('');
+  const [selectedCategory, setSelectedCategory] = React.useState(''); // Empty string shows placeholder initially
   const [sortOption, setSortOption] = React.useState('relevance');
 
   const handleSearchInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,7 +76,7 @@ export function ItemFilters({ onSearchChange, onCategoryChange, onSortChange }: 
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Categories</SelectItem>
+              <SelectItem value="all">All Categories</SelectItem>
               {categories.map((cat) => (
                 <SelectItem key={cat.id} value={cat.id}>
                   <div className="flex items-center">
