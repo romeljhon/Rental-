@@ -10,11 +10,16 @@ import { Loader2 } from 'lucide-react';
 const mockUser: UserProfile = { id: 'user1', name: 'John Doe', avatarUrl: 'https://placehold.co/100x100.png' };
 const mockUser2: UserProfile = { id: 'user2', name: 'Jane Smith', avatarUrl: 'https://placehold.co/100x100.png' };
 
+const getFutureDate = (days: number): Date => {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date;
+};
 
 const allMockItems: RentalItem[] = [
   { id: '1', name: 'Professional DSLR Camera', description: 'High-quality Canon DSLR, perfect for events and professional photography. Comes with two lenses.', category: 'Electronics', pricePerDay: 50, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockUser, location: 'New York, NY', rating: 4.8, reviewsCount: 25, features: ['24MP Sensor', '4K Video', 'Includes 18-55mm & 50mm lenses'], deliveryMethod: 'Pick Up' },
   { id: '2', name: 'Mountain Bike - Full Suspension', description: 'Explore trails with this durable full-suspension mountain bike. Suitable for all terrains.', category: 'Sports & Outdoors', pricePerDay: 35, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockUser, location: 'Denver, CO', rating: 4.5, reviewsCount: 15, features: ['29-inch wheels', 'Hydraulic disc brakes', 'Lightweight aluminum frame'], deliveryMethod: 'Delivery' },
-  { id: '3', name: 'Vintage Leather Jacket', description: 'Stylish vintage leather jacket, medium size. Adds a cool touch to any outfit.', category: 'Apparel', pricePerDay: 20, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Rented', owner: mockUser, location: 'Los Angeles, CA', rating: 4.2, reviewsCount: 8, deliveryMethod: 'Both' },
+  { id: '3', name: 'Vintage Leather Jacket', description: 'Stylish vintage leather jacket, medium size. Adds a cool touch to any outfit.', category: 'Apparel', pricePerDay: 20, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Rented', availableFromDate: getFutureDate(7), owner: mockUser, location: 'Los Angeles, CA', rating: 4.2, reviewsCount: 8, deliveryMethod: 'Both' },
   { id: '4', name: 'Portable Bluetooth Speaker', description: 'Loud and clear portable speaker with 12-hour battery life. Waterproof.', category: 'Electronics', pricePerDay: 15, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockUser2, location: 'Chicago, IL', rating: 4.9, reviewsCount: 42, deliveryMethod: 'Delivery' },
   { id: '5', name: 'Cozy Downtown Apartment', description: '1-bedroom apartment in the heart of the city. Fully furnished with modern amenities.', category: 'Property', pricePerDay: 120, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockUser, location: 'San Francisco, CA', rating: 4.7, reviewsCount: 18, features: ['Sleeps 2', 'WiFi', 'Kitchenette'], deliveryMethod: 'Both' },
   { id: '6', name: 'Heavy Duty Power Drill', description: 'Cordless power drill with multiple bits. Ideal for DIY projects.', category: 'Tools', pricePerDay: 25, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Unavailable', owner: mockUser2, location: 'Austin, TX', rating: 4.3, reviewsCount: 10, deliveryMethod: 'Pick Up' },

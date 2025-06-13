@@ -10,10 +10,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { MapPin, Star, MessageSquare, CheckCircle, Tag, Users, CalendarDays, ChevronLeft, ChevronRight, Package, Truck, ListChecks } from 'lucide-react';
+import { MapPin, Star, MessageSquare, CheckCircle, Tag, Users, CalendarDays, ChevronLeft, ChevronRight, Package, Truck, ListChecks, CalendarClock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DateRange } from 'react-day-picker';
 import { Separator } from '@/components/ui/separator';
+import { format } from 'date-fns';
 
 interface ItemDetailViewProps {
   item: RentalItem;
@@ -146,11 +147,19 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
 
         <Card className="shadow-xl">
           <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2">
               <CardTitle className="text-3xl font-headline mb-2 sm:mb-0">{item.name}</CardTitle>
-              <Badge variant={item.availabilityStatus === 'Available' ? 'default' : 'destructive'} className="text-sm capitalize py-1 px-3 self-start sm:self-center">
-                {item.availabilityStatus}
-              </Badge>
+              <div className="text-right self-start sm:self-center">
+                <Badge variant={item.availabilityStatus === 'Available' ? 'default' : 'destructive'} className="text-sm capitalize py-1 px-3">
+                  {item.availabilityStatus}
+                </Badge>
+                {item.availabilityStatus === 'Rented' && item.availableFromDate && (
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center justify-end">
+                    <CalendarClock className="w-3.5 h-3.5 mr-1" />
+                    Available on: {format(new Date(item.availableFromDate), 'MMM d, yyyy')}
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground mb-3">
               <span className="flex items-center"><Tag className="w-4 h-4 mr-1.5 text-primary" /> {item.category}</span>
@@ -257,8 +266,17 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
               </>
             ) : (
               <div className="p-4 text-center bg-muted rounded-md">
-                <p className="font-semibold text-lg text-destructive">Currently Unavailable</p>
-                <p className="text-sm text-muted-foreground">This item is not available for rent at the moment.</p>
+                <p className="font-semibold text-lg text-destructive">
+                  Currently {item.availabilityStatus}
+                  {item.availabilityStatus === 'Rented' && item.availableFromDate && (
+                    <span className="block text-sm text-muted-foreground font-normal mt-1">
+                      Available on: {format(new Date(item.availableFromDate), 'MMM d, yyyy')}
+                    </span>
+                  )}
+                </p>
+                {item.availabilityStatus !== 'Rented' && (
+                  <p className="text-sm text-muted-foreground">This item is not available for rent at the moment.</p>
+                )}
               </div>
             )}
           </CardContent>

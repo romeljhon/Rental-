@@ -1,11 +1,12 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { MapPin, Tag, Star, Eye, Edit, Trash2, Package, Truck, ListChecks } from 'lucide-react';
+import { MapPin, Star, Eye, Edit, Trash2, Package, Truck, ListChecks, CalendarClock } from 'lucide-react';
 import type { RentalItem } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
 
 interface ItemCardProps {
   item: RentalItem;
@@ -52,11 +53,19 @@ export function ItemCard({ item, onEdit, onRemove }: ItemCardProps) {
         )}
       </CardHeader>
       <CardContent className="p-4 flex-grow">
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-start justify-between mb-1">
           <Badge variant="outline" className="text-xs">{item.category}</Badge>
-           <Badge variant={item.availabilityStatus === 'Available' ? 'default' : 'destructive'} className="capitalize bg-opacity-80">
-            {item.availabilityStatus}
-          </Badge>
+          <div className="text-right">
+            <Badge variant={item.availabilityStatus === 'Available' ? 'default' : 'destructive'} className="capitalize bg-opacity-80">
+              {item.availabilityStatus}
+            </Badge>
+            {item.availabilityStatus === 'Rented' && item.availableFromDate && (
+              <div className="text-xs text-muted-foreground mt-0.5 flex items-center justify-end">
+                <CalendarClock className="w-3 h-3 mr-1" />
+                Avail: {format(new Date(item.availableFromDate), 'MMM d')}
+              </div>
+            )}
+          </div>
         </div>
         <CardTitle className="text-lg font-headline mb-1 leading-tight">
           <Link href={`/items/${item.id}`} className="hover:text-primary transition-colors">

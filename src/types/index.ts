@@ -24,6 +24,7 @@ export interface RentalItem {
   imageUrl: string; // Primary image URL
   images?: string[]; // Additional image URLs
   availabilityStatus: 'Available' | 'Rented' | 'Unavailable'; // More descriptive status
+  availableFromDate?: Date; // Date when a 'Rented' item will become available
   owner: UserProfile;
   location?: string; // e.g., "City, State" or specific address
   rating?: number; // Average rating (e.g., 1-5)
