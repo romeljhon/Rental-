@@ -11,7 +11,7 @@ const mockUser: UserProfile = { id: 'user1', name: 'John Doe', avatarUrl: 'https
 const mockUser2: UserProfile = { id: 'user2', name: 'Jane Smith', avatarUrl: 'https://placehold.co/100x100.png' };
 
 
-const initialItems: RentalItem[] = [
+const allMockItems: RentalItem[] = [
   { id: '1', name: 'Professional DSLR Camera', description: 'High-quality Canon DSLR, perfect for events and professional photography. Comes with two lenses.', category: 'Electronics', pricePerDay: 50, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockUser, location: 'New York, NY', rating: 4.8, reviewsCount: 25, features: ['24MP Sensor', '4K Video', 'Includes 18-55mm & 50mm lenses'], deliveryMethod: 'Pick Up' },
   { id: '2', name: 'Mountain Bike - Full Suspension', description: 'Explore trails with this durable full-suspension mountain bike. Suitable for all terrains.', category: 'Sports & Outdoors', pricePerDay: 35, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockUser, location: 'Denver, CO', rating: 4.5, reviewsCount: 15, features: ['29-inch wheels', 'Hydraulic disc brakes', 'Lightweight aluminum frame'], deliveryMethod: 'Delivery' },
   { id: '3', name: 'Vintage Leather Jacket', description: 'Stylish vintage leather jacket, medium size. Adds a cool touch to any outfit.', category: 'Apparel', pricePerDay: 20, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Rented', owner: mockUser, location: 'Los Angeles, CA', rating: 4.2, reviewsCount: 8, deliveryMethod: 'Both' },
@@ -30,8 +30,9 @@ export default function HomePage() {
 
   useEffect(() => {
     setTimeout(() => {
-      setItems(initialItems);
-      setFilteredItems(initialItems);
+      const availableAndRentedItems = allMockItems.filter(item => item.availabilityStatus !== 'Unavailable');
+      setItems(availableAndRentedItems);
+      setFilteredItems(availableAndRentedItems);
       setIsLoading(false);
     }, 1000);
   }, []);
@@ -58,12 +59,21 @@ export default function HomePage() {
         currentItems.sort((a, b) => b.pricePerDay - a.pricePerDay);
         break;
       case 'newest': 
-        currentItems.sort((a, b) => parseInt(b.id) - parseInt(a.id)); 
+        // Assuming IDs are somewhat sequential for newest. For real 'newest', you'd use a timestamp.
+        currentItems.sort((a, b) => {
+          // A simple sort by ID assuming higher IDs are newer.
+          // For a robust "newest" sort, items should have a creation_date timestamp.
+          const idA = parseInt(a.id, 10);
+          const idB = parseInt(b.id, 10);
+          if (isNaN(idA) || isNaN(idB)) return 0; // Fallback for non-numeric IDs
+          return idB - idA;
+        });
         break;
       case 'rating':
         currentItems.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         break;
       default: 
+        // Default (relevance) - no specific sort here, relies on initial order or search algorithm in a real app
         break;
     }
 
@@ -106,7 +116,7 @@ export default function HomePage() {
         <div className="text-center py-12">
           <h2 className="text-2xl font-semibold text-muted-foreground mb-2">No Items Found</h2>
           <p className="text-foreground">Try adjusting your search or filters.</p>
-           <Button variant="outline" className="mt-4" onClick={() => { setSearchTerm(''); setCategory(''); }}>
+           <Button variant="outline" className="mt-4" onClick={() => { setSearchTerm(''); setCategory(''); setSortOption('relevance'); }}>
             Clear Filters
           </Button>
         </div>
