@@ -17,29 +17,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { getActiveUserId, getActiveUserProfile } from '@/lib/auth'; // Import auth functions
-
-// Mock users - keep one for item ownership example if needed, but active user drives logic
-const mockOwnerUser: UserProfile = { id: 'user1', name: 'John Doe', avatarUrl: 'https://placehold.co/100x100.png' }; 
-const anotherOwner: UserProfile = { id: 'user123', name: 'Alice W.', avatarUrl: 'https://placehold.co/100x100.png'};
-
-
-const getFutureDate = (days: number): Date => {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return date;
-};
-
-// This data now includes items from different owners for testing user switching
-const allMockItems: RentalItem[] = [
-  { id: '1', name: 'Professional DSLR Camera', description: 'High-quality Canon DSLR, perfect for events and professional photography. Comes with two lenses.', category: 'Electronics', pricePerDay: 50, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockOwnerUser, location: 'New York, NY', rating: 4.8, reviewsCount: 25, features: ['24MP Sensor', '4K Video', 'Includes 18-55mm & 50mm lenses'], deliveryMethod: 'Pick Up', availableFromDate: getFutureDate(0) },
-  { id: '2', name: 'Mountain Bike - Full Suspension', description: 'Explore trails with this durable full-suspension mountain bike. Suitable for all terrains.', category: 'Sports & Outdoors', pricePerDay: 35, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockOwnerUser, location: 'Denver, CO', rating: 4.5, reviewsCount: 15, features: ['29-inch wheels', 'Hydraulic disc brakes', 'Lightweight aluminum frame'], deliveryMethod: 'Delivery', availableFromDate: getFutureDate(0) },
-  { id: '3', name: 'Vintage Leather Jacket (Johns)', description: 'Stylish vintage leather jacket, medium size. Adds a cool touch to any outfit.', category: 'Apparel', pricePerDay: 20, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Rented', availableFromDate: getFutureDate(7), owner: mockOwnerUser, location: 'Los Angeles, CA', rating: 4.2, reviewsCount: 8, deliveryMethod: 'Both' },
-  { id: 'other_owner_item', name: 'Portable Projector (Not Johns)', description: 'HD portable projector, great for movie nights.', category: 'Electronics', pricePerDay: 30, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: { id: 'user2', name: 'Jane Smith', avatarUrl: 'https://placehold.co/100x100.png'}, location: 'Chicago, IL', rating: 4.6, reviewsCount: 10, deliveryMethod: 'Pick Up', availableFromDate: getFutureDate(0) },
-  { id: '4', name: 'Portable Bluetooth Speaker (Johns)', description: 'Loud and clear portable speaker with 12-hour battery life. Waterproof.', category: 'Electronics', pricePerDay: 15, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockOwnerUser, location: 'Chicago, IL', rating: 4.9, reviewsCount: 42, deliveryMethod: 'Delivery', availableFromDate: getFutureDate(0) },
-  { id: 'alice_item_1', name: 'Yoga Mat (Alices)', description: 'Premium non-slip yoga mat.', category: 'Sports & Outdoors', pricePerDay: 10, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: anotherOwner, location: 'San Francisco, CA', rating: 4.7, reviewsCount: 18, deliveryMethod: 'Pick Up', availableFromDate: getFutureDate(0) },
-  { id: 'alice_item_2', name: 'Ukulele (Alices)', description: 'Fun and easy to play concert ukulele.', category: 'Musical Instruments', pricePerDay: 12, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Rented', availableFromDate: getFutureDate(3), owner: anotherOwner, location: 'San Francisco, CA', rating: 4.5, reviewsCount: 5, deliveryMethod: 'Both' },
-];
+import { getActiveUserId } from '@/lib/auth';
+import { getAllItems, deleteItem } from '@/lib/item-storage'; // Updated import
 
 export default function MyItemsPage() {
   const [activeUserId, setActiveUserId] = useState<string | null>(null);
@@ -49,43 +28,94 @@ export default function MyItemsPage() {
   const router = useRouter(); 
   const [itemToRemove, setItemToRemove] = useState<RentalItem | null>(null);
 
-  useEffect(() => {
-    // Get active user ID from localStorage on mount
-    const currentId = getActiveUserId();
-    setActiveUserId(currentId);
-  }, []);
+  const fetchUserItems = async (userId: string) => {
+    setIsLoading(true);
+    try {
+      const allItems = await getAllItems();
+      const itemsOwnedByUser = allItems.filter(item => item.owner.id === userId);
+      setMyItems(itemsOwnedByUser);
+    } catch (error) {
+      console.error("Failed to fetch user items:", error);
+      toast({ title: "Error", description: "Could not load your items.", variant: "destructive" });
+      setMyItems([]); // Set to empty on error
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Filter items when activeUserId is set or changes
-    if (activeUserId) {
-      setIsLoading(true);
-      setTimeout(() => {
-        const itemsOwnedByUser = allMockItems.filter(item => item.owner.id === activeUserId);
-        setMyItems(itemsOwnedByUser);
-        setIsLoading(false);
-      }, 300); // Shorter timeout for faster feedback on user switch
+    const currentId = getActiveUserId();
+    setActiveUserId(currentId);
+    if (currentId) {
+      fetchUserItems(currentId);
     } else {
-      // Handle case where activeUserId is not yet available (e.g., initial load)
-      setMyItems([]);
-      setIsLoading(true); // Or false if you prefer to show empty state immediately
+        setIsLoading(false); // No user ID, stop loading
     }
-  }, [activeUserId]);
+  }, []); // Fetch on initial mount based on initial active user
+
+  // Refetch items if activeUserId changes (e.g., user switches profile in header)
+  useEffect(() => {
+    const handleUserSwitch = () => {
+        const newActiveId = getActiveUserId();
+        if (newActiveId !== activeUserId) { // Check if user actually changed
+            setActiveUserId(newActiveId);
+            if (newActiveId) {
+                fetchUserItems(newActiveId);
+            } else {
+                setMyItems([]);
+                setIsLoading(false);
+            }
+        }
+    };
+
+    // Listen for storage changes as a proxy for user switching if direct event isn't available
+    window.addEventListener('storage', handleUserSwitch);
+    // Also re-check on focus in case localStorage was changed in another tab
+    window.addEventListener('focus', handleUserSwitch);
+
+
+    // Initial fetch if activeUserId is already set but perhaps items weren't loaded
+    // This is more for robustness if the first useEffect's conditions weren't perfectly met
+    if (activeUserId && myItems.length === 0 && !isLoading) { // Avoid re-fetching if already loading or has items
+        // fetchUserItems(activeUserId); // Commented out to avoid potential rapid re-fetches; rely on user switch or initial load.
+    }
+    
+    return () => {
+        window.removeEventListener('storage', handleUserSwitch);
+        window.removeEventListener('focus', handleUserSwitch);
+    };
+  }, [activeUserId, isLoading, myItems.length]); // Dependencies for re-running the effect
 
   const handleEditItem = (itemId: string) => {
     router.push(`/items/${itemId}/edit`);
   };
 
-  const confirmRemoveItem = () => {
-    if (!itemToRemove) return;
-    // Simulate removing from a backend by filtering local state
-    setMyItems(prevItems => prevItems.filter(item => item.id !== itemToRemove.id));
-    // In a real app, you would also update allMockItems or your backend data
-    toast({
-      title: 'Item Removed (Mock)',
-      description: `"${itemToRemove.name}" has been removed from your listings.`,
-      variant: 'destructive'
-    });
-    setItemToRemove(null); 
+  const confirmRemoveItem = async () => {
+    if (!itemToRemove || !activeUserId) return;
+    setIsLoading(true); // Indicate activity
+    try {
+      const success = await deleteItem(itemToRemove.id);
+      if (success) {
+        toast({
+          title: 'Item Removed',
+          description: `"${itemToRemove.name}" has been removed from your listings.`,
+        });
+        // Refetch items for the current user to update the list
+        await fetchUserItems(activeUserId);
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to remove item. It might have already been deleted.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error("Error removing item:", error);
+      toast({ title: "Error", description: "Could not remove item.", variant: "destructive" });
+    } finally {
+      setItemToRemove(null); 
+      // setIsLoading(false); // fetchUserItems will set this
+    }
   };
   
   const openRemoveConfirmation = (itemId: string) => {
@@ -95,14 +125,6 @@ export default function MyItemsPage() {
     }
   };
 
-  if (isLoading && !activeUserId) { // Show initial loading until user ID is resolved
-    return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4 text-lg text-muted-foreground">Initializing...</p>
-      </div>
-    );
-  }
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
@@ -111,7 +133,6 @@ export default function MyItemsPage() {
       </div>
     );
   }
-
 
   return (
     <div className="space-y-8">

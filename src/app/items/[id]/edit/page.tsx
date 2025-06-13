@@ -6,33 +6,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useParams } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
-import { getActiveUserProfile } from '@/lib/auth'; // Import auth function
-
-// Minimal mock user for item ownership structure - actual owner is from activeUser
-const mockOwnerUser: UserProfile = { id: 'user1', name: 'John Doe', avatarUrl: 'https://placehold.co/100x100.png' };
-const mockAliceUser: UserProfile = { id: 'user123', name: 'Alice W.', avatarUrl: 'https://placehold.co/100x100.png' };
-
-
-const getFutureDate = (days: number): Date => {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return date;
-};
-
-const mockItems: RentalItem[] = [
-  { id: '1', name: 'Professional DSLR Camera', description: 'High-quality Canon DSLR, perfect for events and professional photography. Comes with two lenses: a versatile 18-55mm for general use and a 50mm f/1.8 prime lens for stunning portraits with beautiful bokeh. Features a 24MP APS-C sensor, 4K video recording capabilities, and a user-friendly interface suitable for both beginners and experienced photographers. Battery life allows for approximately 500 shots. Includes camera body, two lenses, battery, charger, and carrying case.', category: 'Electronics', pricePerDay: 50, imageUrl: 'https://placehold.co/800x500.png', images: ['https://placehold.co/800x500.png', 'https://placehold.co/800x500.png'], availabilityStatus: 'Available', owner: mockOwnerUser, location: 'New York, NY', rating: 4.8, reviewsCount: 25, features: ['24MP Sensor', '4K Video', '18-55mm Lens', '50mm f/1.8 Lens', 'Carry Bag Included'], deliveryMethod: 'Pick Up', availableFromDate: getFutureDate(0) },
-  { id: '2', name: 'Mountain Bike - Full Suspension', description: 'Explore challenging trails with this durable full-suspension mountain bike. It features a lightweight aluminum frame, 29-inch wheels for smooth rolling over obstacles, and hydraulic disc brakes for reliable stopping power in all conditions. The 12-speed drivetrain offers a wide range of gears for climbing and descending. Suitable for intermediate to advanced riders.', category: 'Sports & Outdoors', pricePerDay: 35, imageUrl: 'https://placehold.co/800x500.png', availabilityStatus: 'Available', owner: mockOwnerUser, location: 'Denver, CO', rating: 4.5, reviewsCount: 15, features: ['29-inch wheels', 'Hydraulic disc brakes', '12-speed drivetrain', 'Aluminum frame', 'Helmet included'], deliveryMethod: 'Delivery', availableFromDate: getFutureDate(0) },
-  { id: '3', name: 'Vintage Leather Jacket', description: 'Authentic vintage leather jacket from the 1980s. Men\'s medium size. Classic biker style with a comfortable inner lining. Shows some signs of wear, adding to its character. Perfect for themed parties or a stylish everyday look.', category: 'Apparel', pricePerDay: 20, imageUrl: 'https://placehold.co/800x500.png', availabilityStatus: 'Rented', availableFromDate: getFutureDate(7), owner: mockOwnerUser, location: 'Los Angeles, CA', rating: 4.2, reviewsCount: 8, features: ['Genuine Leather', 'Men\'s Medium', 'Biker Style'], deliveryMethod: 'Both' },
-  { id: '4', name: 'Portable Bluetooth Speaker', description: 'Loud and clear portable speaker with 12-hour battery life. Waterproof.', category: 'Electronics', pricePerDay: 15, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockOwnerUser, location: 'Chicago, IL', rating: 4.9, reviewsCount: 42, deliveryMethod: 'Delivery', availableFromDate: getFutureDate(0) },
-  { id: 'alice_item_1', name: 'Yoga Mat (Alices)', description: 'Premium non-slip yoga mat.', category: 'Sports & Outdoors', pricePerDay: 10, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Available', owner: mockAliceUser, location: 'San Francisco, CA', rating: 4.7, reviewsCount: 18, deliveryMethod: 'Pick Up', availableFromDate: getFutureDate(0) },
-  { id: 'alice_item_2', name: 'Ukulele (Alices)', description: 'Fun and easy to play concert ukulele.', category: 'Musical Instruments', pricePerDay: 12, imageUrl: 'https://placehold.co/600x400.png', availabilityStatus: 'Rented', availableFromDate: getFutureDate(3), owner: mockAliceUser, location: 'San Francisco, CA', rating: 4.5, reviewsCount: 5, deliveryMethod: 'Both' },
-];
-
-async function getItemById(id: string): Promise<RentalItem | null> {
-  await new Promise(resolve => setTimeout(resolve, 300)); 
-  const item = mockItems.find(item => item.id === id);
-  return item || null;
-}
+import { getActiveUserProfile } from '@/lib/auth';
+import { getItemById as fetchItemById } from '@/lib/item-storage'; // Updated import
 
 export default function EditItemPage() {
   const params = useParams();
@@ -43,17 +18,19 @@ export default function EditItemPage() {
   const [activeUser, setActiveUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    setActiveUser(getActiveUserProfile());
+    const userProfile = getActiveUserProfile(); // Fetch once
+    setActiveUser(userProfile);
   }, []);
 
   useEffect(() => {
-    if (id && activeUser) { // Ensure activeUser is loaded before fetching
-      const fetchItem = async () => {
+    if (id && activeUser) { 
+      const fetchItemForEditing = async () => {
         setIsLoading(true);
+        setError(null);
         try {
-          const fetchedItem = await getItemById(id);
+          const fetchedItem = await fetchItemById(id);
           if (fetchedItem) {
-            if (fetchedItem.owner.id === activeUser.id) { // Check against active user
+            if (fetchedItem.owner.id === activeUser.id) {
               setItem(fetchedItem);
             } else {
               setError("You are not authorized to edit this item.");
@@ -68,15 +45,15 @@ export default function EditItemPage() {
           setIsLoading(false);
         }
       };
-      fetchItem();
+      fetchItemForEditing();
     } else if (!id) {
       setIsLoading(false);
       setError("Item ID is missing.");
     }
-    // If activeUser is not yet loaded, isLoading remains true until it is.
+    // If activeUser is not yet loaded, or id is missing, appropriate states are set.
   }, [id, activeUser]);
 
-  if (isLoading || !activeUser) { // Also wait for activeUser to be determined
+  if (isLoading || !activeUser) { // Wait for activeUser and item loading
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -90,25 +67,23 @@ export default function EditItemPage() {
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
         <Alert variant="destructive" className="max-w-md">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>{error === "Item not found." ? "Item Not Found" : "Error"}</AlertTitle>
+          <AlertTitle>{error === "Item not found." ? "Item Not Found" : "Access Denied"}</AlertTitle>
           <AlertDescription>
-            {error === "Item not found."
-              ? "The rental item you are trying to edit does not exist or may have been removed."
-              : error}
+            {error}
           </AlertDescription>
         </Alert>
       </div>
     );
   }
   
-  if (!item) { 
+  if (!item) { // Should be covered by error state if not found, but good fallback.
     return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
             <Alert variant="destructive" className="max-w-md">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Item Not Found</AlertTitle>
                 <AlertDescription>
-                Could not load item details for editing.
+                Could not load item details for editing. It might have been removed.
                 </AlertDescription>
             </Alert>
         </div>
