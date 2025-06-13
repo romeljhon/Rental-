@@ -2,12 +2,14 @@
 "use client";
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, LayoutGrid, PlusCircle, CalendarCheck, MessageCircle, Menu, X, Shield, Users, User, Bell, ChevronDown } from 'lucide-react';
+import { Home, LayoutGrid, PlusCircle, CalendarCheck, MessageCircle, Menu, X, Shield, Users, User, Bell, ChevronDown, Sun, Moon } from 'lucide-react';
 import type { NavItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetClose, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import React from 'react';
+import { ThemeToggleButton } from './ThemeToggleButton';
+
 
 const navItems: NavItem[] = [
   { href: '/', label: 'Browse', icon: LayoutGrid, exact: true },
@@ -63,8 +65,6 @@ export function Header() {
   
   const CurrentViewIcon = currentViewMode.icon;
 
-  const commonClasses = "text-foreground hover:text-primary transition-colors";
-
   const renderViewSwitcherItems = (isMobile: boolean) => (
     <>
       {viewModes.map((mode) => (
@@ -119,10 +119,12 @@ export function Header() {
             )}
             <span className="sr-only">Notifications</span>
           </Button>
+          <ThemeToggleButton />
         </nav>
 
         {/* Mobile Navigation */}
-        <div className="sm:hidden">
+        <div className="sm:hidden flex items-center gap-1">
+          <ThemeToggleButton />
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -131,7 +133,7 @@ export function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-full max-w-xs bg-background p-0">
-               <SheetTitle className="sr-only">Mobile Navigation Menu</SheetTitle>
+               <SheetTitle className="sr-only">Mobile Navigation</SheetTitle>
                <div className="flex flex-col h-full">
                 <div className="p-6 border-b">
                   <div className="mb-6 flex items-center justify-between">
@@ -193,4 +195,3 @@ export function Header() {
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
-
