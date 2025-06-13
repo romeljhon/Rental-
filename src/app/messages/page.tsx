@@ -1,66 +1,81 @@
 
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ConversationListItem } from '@/components/messages/ConversationListItem';
 import { MessageBubble } from '@/components/messages/MessageBubble';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, Loader2, MessageSquare, Search } from 'lucide-react';
-import type { Conversation, Message as MessageType, UserProfile } from '@/types';
+import type { Conversation, Message as MessageType, UserProfile, RentalItem } from '@/types';
 import Image from 'next/image';
-import { getActiveUserId, getActiveUserProfile, MOCK_USER_JOHN, MOCK_USER_ALICE } from '@/lib/auth'; // Import auth functions
+import { getActiveUserId, getActiveUserProfile, MOCK_USER_JOHN, MOCK_USER_ALICE } from '@/lib/auth';
 
 // Mock users array that includes our switchable users and others
 const mockUsersForChat: UserProfile[] = [
   MOCK_USER_JOHN,
   MOCK_USER_ALICE,
-  { id: 'user456', name: 'Bob The Builder', avatarUrl: 'https://placehold.co/40x40.png' }, // Corresponds to Bob in conversations
-  { id: 'user789', name: 'Charlie Chaplin', avatarUrl: 'https://placehold.co/40x40.png' }, // Corresponds to Charlie
+  { id: 'user456', name: 'Bob The Builder', avatarUrl: 'https://placehold.co/40x40.png' },
+  { id: 'user789', name: 'Charlie Chaplin', avatarUrl: 'https://placehold.co/40x40.png' },
 ];
+
+// Consistent Item Contexts for Mock Data
+const ITEM_CONTEXT_CAMERA: Pick<RentalItem, 'id' | 'name'> = { id: '1', name: 'Professional DSLR Camera' };
+const ITEM_CONTEXT_BIKE: Pick<RentalItem, 'id' | 'name'> = { id: '2', name: 'Mountain Bike - Full Suspension' };
+const ITEM_CONTEXT_JACKET: Pick<RentalItem, 'id' | 'name'> = { id: '3', name: 'Vintage Leather Jacket' };
 
 
 const getMockConversations = (loggedInUserId: string): Conversation[] => [
   { 
-    id: 'conv1', // John (user1) with Bob (user456)
+    id: 'conv1', 
     participants: [MOCK_USER_JOHN, mockUsersForChat.find(u => u.id === 'user456')!], 
-    lastMessage: { id: 'msg1', conversationId: 'conv1', senderId: 'user456', text: 'Hey, is the camera still available for next weekend?', timestamp: new Date(Date.now() - 1000 * 60 * 5), isRead: loggedInUserId === 'user1' ? true : false },
-    unreadCount: loggedInUserId === 'user1' ? 0 : 1,
-    itemContext: { id: 'item1', name: 'DSLR Camera' }
+    lastMessage: { id: 'msg1', conversationId: 'conv1', senderId: 'user456', text: 'Hey, is the camera still available for next weekend?', timestamp: new Date(Date.now() - 1000 * 60 * 5), isRead: loggedInUserId === MOCK_USER_JOHN.id ? false : loggedInUserId === 'user456' ? true : false },
+    unreadCount: loggedInUserId === MOCK_USER_JOHN.id ? 1 : 0,
+    itemContext: ITEM_CONTEXT_CAMERA
   },
   { 
-    id: 'conv2', // Alice (user123) with Charlie (user789)
+    id: 'conv2', 
     participants: [MOCK_USER_ALICE, mockUsersForChat.find(u => u.id === 'user789')!], 
-    lastMessage: { id: 'msg2', conversationId: 'conv2', senderId: 'user123', text: 'Sure, I can drop it off on Friday evening.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), isRead: true },
-    itemContext: { id: 'item2', name: 'Mountain Bike' }
+    lastMessage: { id: 'msg2', conversationId: 'conv2', senderId: MOCK_USER_ALICE.id, text: 'Sure, I can drop it off on Friday evening.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), isRead: true },
+    itemContext: ITEM_CONTEXT_BIKE
   },
    { 
-    id: 'conv3', // John (user1) with Alice (user123)
+    id: 'conv3', 
     participants: [MOCK_USER_JOHN, MOCK_USER_ALICE], 
-    lastMessage: { id: 'msg3', conversationId: 'conv3', senderId: MOCK_USER_ALICE.id, text: 'Hi John, about the jacket...', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 1), isRead: loggedInUserId === MOCK_USER_JOHN.id ? true : false },
-    unreadCount: loggedInUserId === MOCK_USER_JOHN.id ? 0 : 1,
-    itemContext: { id: 'item3', name: 'Leather Jacket' }
+    lastMessage: { id: 'msg3', conversationId: 'conv3', senderId: MOCK_USER_ALICE.id, text: 'Hi John, about the jacket...', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 1), isRead: loggedInUserId === MOCK_USER_JOHN.id ? false : loggedInUserId === MOCK_USER_ALICE.id ? true : false },
+    unreadCount: loggedInUserId === MOCK_USER_JOHN.id ? 1 : 0,
+    itemContext: ITEM_CONTEXT_JACKET
+  },
+  { 
+    id: 'conv4', // A conversation without item context between John and Bob
+    participants: [MOCK_USER_JOHN, mockUsersForChat.find(u => u.id === 'user456')!], 
+    lastMessage: { id: 'msg4', conversationId: 'conv4', senderId: MOCK_USER_JOHN.id, text: 'Just a general question.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), isRead: true },
   },
 ];
 
 const mockMessages: Record<string, MessageType[]> = {
-  conv1: [ // John with Bob
+  conv1: [ 
     { id: 'msgA', conversationId: 'conv1', senderId: 'user456', text: 'Hi John!', timestamp: new Date(Date.now() - 1000 * 60 * 10) },
     { id: 'msgB', conversationId: 'conv1', senderId: MOCK_USER_JOHN.id, text: 'Hey Bob! What\'s up?', timestamp: new Date(Date.now() - 1000 * 60 * 8) },
     { id: 'msg1', conversationId: 'conv1', senderId: 'user456', text: 'Hey, is the camera still available for next weekend?', timestamp: new Date(Date.now() - 1000 * 60 * 5) },
   ],
-  conv2: [ // Alice with Charlie
+  conv2: [ 
     { id: 'msgC', conversationId: 'conv2', senderId: 'user789', text: 'Regarding the bike rental...', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3) },
     { id: 'msg2', conversationId: 'conv2', senderId: MOCK_USER_ALICE.id, text: 'Sure, I can drop it off on Friday evening.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2) },
   ],
-  conv3: [ // John with Alice
+  conv3: [ 
     { id: 'msgD', conversationId: 'conv3', senderId: MOCK_USER_ALICE.id, text: 'Hi John, about the jacket...', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 1)},
     { id: 'msgE', conversationId: 'conv3', senderId: MOCK_USER_JOHN.id, text: 'Hey Alice, what about it?', timestamp: new Date(Date.now() - 1000 * 60 * 58)},
+  ],
+  conv4: [
+    { id: 'msgF', conversationId: 'conv4', senderId: MOCK_USER_JOHN.id, text: 'Just a general question.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24) },
+    { id: 'msgG', conversationId: 'conv4', senderId: 'user456', text: 'Sure, what is it?', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 23) },
   ]
 };
 
-
-export default function MessagesPage() {
+function MessagesPageContent() {
+  const searchParams = useSearchParams();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -84,30 +99,50 @@ export default function MessagesPage() {
   useEffect(() => {
     if (currentUserId) {
       setIsLoading(true);
-      // Simulate API call to fetch conversations for the current user
-      setTimeout(() => {
-        const userConversations = getMockConversations(currentUserId).filter(conv => conv.participants.some(p => p.id === currentUserId));
-        setConversations(userConversations);
-        if (userConversations.length > 0) {
-          // Try to keep selected conversation if still valid, otherwise select first
-           if (selectedConversationId && userConversations.some(c => c.id === selectedConversationId)) {
-            // keep current selection
-          } else {
-            setSelectedConversationId(userConversations[0].id);
+      const userConversations = getMockConversations(currentUserId)
+        .filter(conv => conv.participants.some(p => p.id === currentUserId))
+        .sort((a,b) => (b.lastMessage?.timestamp.getTime() || 0) - (a.lastMessage?.timestamp.getTime() || 0));
+      
+      setConversations(userConversations);
+
+      const targetUserId = searchParams.get('with');
+      const targetItemId = searchParams.get('contextItemId');
+      let preSelectedConvId: string | null = null;
+
+      if (targetUserId) {
+        const potentialConvs = userConversations.filter(conv => 
+          conv.participants.some(p => p.id === targetUserId)
+        );
+        if (targetItemId) {
+          const itemSpecificConv = potentialConvs.find(conv => conv.itemContext?.id === targetItemId);
+          if (itemSpecificConv) {
+            preSelectedConvId = itemSpecificConv.id;
           }
-        } else {
-            setSelectedConversationId(null);
         }
-        setIsLoading(false);
-      }, 500);
+        // If no item-specific found, or no item id provided, pick the most recent with the target user
+        if (!preSelectedConvId && potentialConvs.length > 0) {
+           preSelectedConvId = potentialConvs[0].id; // Already sorted by most recent
+        }
+      }
+
+      if (preSelectedConvId) {
+        setSelectedConversationId(preSelectedConvId);
+      } else if (userConversations.length > 0) {
+        setSelectedConversationId(userConversations[0].id);
+      } else {
+        setSelectedConversationId(null);
+      }
+      setIsLoading(false);
     }
-  }, [currentUserId]); // Re-fetch/filter conversations when user changes
+  }, [currentUserId, searchParams]);
 
   useEffect(() => {
     if (selectedConversationId) {
       setMessages(mockMessages[selectedConversationId] || []);
       // Mark messages as read (mock)
-      setConversations(prev => prev.map(c => c.id === selectedConversationId ? {...c, unreadCount: 0} : c));
+      setConversations(prev => prev.map(c => 
+          c.id === selectedConversationId ? {...c, unreadCount: 0, lastMessage: c.lastMessage ? {...c.lastMessage, isRead: true} : undefined } : c
+      ));
     } else {
       setMessages([]);
     }
@@ -132,6 +167,7 @@ export default function MessagesPage() {
       senderId: currentUserId,
       text: newMessage.trim(),
       timestamp: new Date(),
+      isRead: true, // Sender always reads their own message
     };
 
     setTimeout(() => {
@@ -142,7 +178,7 @@ export default function MessagesPage() {
       );
       setNewMessage('');
       setIsSending(false);
-    }, 500);
+    }, 300);
   };
 
   if (isLoading || !currentUserId || !currentUserProfile) {
@@ -238,5 +274,19 @@ export default function MessagesPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// Wrap with Suspense for useSearchParams
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center items-center h-[calc(100vh-200px)]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="ml-4 text-lg text-muted-foreground">Loading messages...</p>
+      </div>
+    }>
+      <MessagesPageContent />
+    </Suspense>
   );
 }
