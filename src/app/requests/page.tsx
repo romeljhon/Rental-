@@ -1,5 +1,6 @@
+
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { RequestCard } from '@/components/requests/RequestCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -7,38 +8,43 @@ import type { RentalRequest, UserProfile } from '@/types';
 import { Loader2, Inbox } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// Mock current user
-const currentUserId = 'user123'; // Assume this is the ID of the logged-in user
+const currentUserId = 'user123'; 
 const currentUserProfile: UserProfile = { id: currentUserId, name: 'Alice Wonderland', avatarUrl: 'https://placehold.co/100x100.png' };
-
 const otherUserProfile: UserProfile = { id: 'user456', name: 'Bob The Builder', avatarUrl: 'https://placehold.co/100x100.png' };
 
 
-const mockRequests: RentalRequest[] = [
-  { id: 'req1', itemId: '1', item: {id: '1', name: 'DSLR Camera', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 50}, requester: currentUserProfile, owner: otherUserProfile, startDate: new Date('2024-08-01'), endDate: new Date('2024-08-05'), status: 'Pending', totalPrice: 250, requestedAt: new Date() },
-  { id: 'req2', itemId: '2', item: {id: '2', name: 'Mountain Bike', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 35}, requester: otherUserProfile, owner: currentUserProfile, startDate: new Date('2024-08-10'), endDate: new Date('2024-08-12'), status: 'Approved', totalPrice: 105, requestedAt: new Date() },
-  { id: 'req3', itemId: '3', item: {id: '3', name: 'Leather Jacket', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 20}, requester: currentUserProfile, owner: otherUserProfile, startDate: new Date('2024-07-20'), endDate: new Date('2024-07-22'), status: 'Completed', totalPrice: 60, requestedAt: new Date() },
-  { id: 'req4', itemId: '4', item: {id: '4', name: 'Bluetooth Speaker', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 15}, requester: otherUserProfile, owner: currentUserProfile, startDate: new Date('2024-08-15'), endDate: new Date('2024-08-18'), status: 'Pending', totalPrice: 60, requestedAt: new Date() },
-  { id: 'req5', itemId: '5', item: {id: '5', name: 'Downtown Apartment', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 120}, requester: currentUserProfile, owner: otherUserProfile, startDate: new Date('2024-09-01'), endDate: new Date('2024-09-07'), status: 'Rejected', totalPrice: 840, requestedAt: new Date() },
+const initialMockRequests: RentalRequest[] = [
+  { id: 'req1', itemId: '1', item: {id: '1', name: 'DSLR Camera', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 50}, requester: currentUserProfile, owner: otherUserProfile, startDate: new Date('2024-08-01'), endDate: new Date('2024-08-05'), status: 'Approved', totalPrice: 250, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 24) },
+  { id: 'req2', itemId: '2', item: {id: '2', name: 'Mountain Bike', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 35}, requester: otherUserProfile, owner: currentUserProfile, startDate: new Date('2024-08-10'), endDate: new Date('2024-08-12'), status: 'Approved', totalPrice: 105, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 48) },
+  { id: 'req3', itemId: '3', item: {id: '3', name: 'Leather Jacket', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 20}, requester: currentUserProfile, owner: otherUserProfile, startDate: new Date('2024-07-20'), endDate: new Date('2024-07-22'), status: 'Completed', totalPrice: 60, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10) },
+  { id: 'req4', itemId: '4', item: {id: '4', name: 'Bluetooth Speaker', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 15}, requester: otherUserProfile, owner: currentUserProfile, startDate: new Date('2024-08-15'), endDate: new Date('2024-08-18'), status: 'Pending', totalPrice: 60, requestedAt: new Date(Date.now() - 1000 * 60 * 30) },
+  { id: 'req5', itemId: '5', item: {id: '5', name: 'Downtown Apartment', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 120}, requester: currentUserProfile, owner: otherUserProfile, startDate: new Date('2024-09-01'), endDate: new Date('2024-09-07'), status: 'Rejected', totalPrice: 840, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 5) },
+  { id: 'req6', itemId: 'item_owned_by_current_user_and_approved', item: {id: 'item_owned_by_current_user_and_approved', name: 'Owned Item Example', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 20}, requester: otherUserProfile, owner: currentUserProfile, startDate: new Date('2024-08-20'), endDate: new Date('2024-08-22'), status: 'ReceiptConfirmed', totalPrice: 40, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 72) },
 ];
 
 export default function RequestsPage() {
   const { toast } = useToast();
-  const [sentRequests, setSentRequests] = useState<RentalRequest[]>([]);
-  const [receivedRequests, setReceivedRequests] = useState<RentalRequest[]>([]);
+  const [requests, setRequests] = useState<RentalRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call
     setTimeout(() => {
-      setSentRequests(mockRequests.filter(req => req.requester.id === currentUserId));
-      setReceivedRequests(mockRequests.filter(req => req.owner.id === currentUserId));
+      setRequests(initialMockRequests.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
       setIsLoading(false);
     }, 1000);
   }, []);
+  
+  const sentRequests = useMemo(() => {
+    return requests.filter(req => req.requester.id === currentUserId).sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime());
+  }, [requests]);
 
-  const updateRequestStatus = (requestId: string, newStatus: RentalRequest['status'], listSetter: React.Dispatch<React.SetStateAction<RentalRequest[]>>) => {
-    listSetter(prevRequests =>
+  const receivedRequests = useMemo(() => {
+    return requests.filter(req => req.owner.id === currentUserId).sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime());
+  }, [requests]);
+
+
+  const updateRequestStatusById = (requestId: string, newStatus: RentalRequest['status']) => {
+    setRequests(prevRequests =>
       prevRequests.map(req =>
         req.id === requestId ? { ...req, status: newStatus } : req
       )
@@ -46,24 +52,23 @@ export default function RequestsPage() {
   };
   
   const handleApprove = (requestId: string) => {
-    updateRequestStatus(requestId, 'Approved', setReceivedRequests);
+    updateRequestStatusById(requestId, 'Approved');
     toast({ title: 'Request Approved', description: 'The rental request has been approved.' });
   };
 
   const handleReject = (requestId: string) => {
-    updateRequestStatus(requestId, 'Rejected', setReceivedRequests);
+    updateRequestStatusById(requestId, 'Rejected');
     toast({ title: 'Request Rejected', description: 'The rental request has been rejected.', variant: 'destructive' });
   };
   
   const handleCancel = (requestId: string) => {
-    // Determine if it's a sent or received request to update the correct list
-    const isSent = sentRequests.some(req => req.id === requestId);
-    if (isSent) {
-      updateRequestStatus(requestId, 'Cancelled', setSentRequests);
-    } else {
-      updateRequestStatus(requestId, 'Cancelled', setReceivedRequests);
-    }
+    updateRequestStatusById(requestId, 'Cancelled');
     toast({ title: 'Request Cancelled', description: 'The rental request has been cancelled.' });
+  };
+
+  const handleConfirmReceipt = (requestId: string) => {
+    updateRequestStatusById(requestId, 'ReceiptConfirmed');
+    toast({ title: 'Item Receipt Confirmed', description: 'The owner has been notified. (Mock)' });
   };
 
 
@@ -76,8 +81,8 @@ export default function RequestsPage() {
     );
   }
   
-  const renderRequestList = (requests: RentalRequest[], type: 'sent' | 'received') => {
-    if (requests.length === 0) {
+  const renderRequestList = (reqs: RentalRequest[], type: 'sent' | 'received') => {
+    if (reqs.length === 0) {
       return (
         <div className="text-center py-12 text-muted-foreground">
           <Inbox className="mx-auto h-16 w-16 mb-4 opacity-50" />
@@ -88,14 +93,15 @@ export default function RequestsPage() {
     }
     return (
       <div className="space-y-4">
-        {requests.map(req => (
+        {reqs.map(req => (
           <RequestCard 
             key={req.id} 
             request={req} 
             type={type} 
-            onApprove={type === 'received' ? handleApprove : undefined}
-            onReject={type === 'received' ? handleReject : undefined}
-            onCancel={handleCancel} // Cancel can be on both sent and received (e.g. owner cancels approved)
+            onApprove={type === 'received' && req.status === 'Pending' ? handleApprove : undefined}
+            onReject={type === 'received' && req.status === 'Pending' ? handleReject : undefined}
+            onCancel={(req.status === 'Pending' || req.status === 'Approved') ? handleCancel : undefined}
+            onConfirmReceipt={type === 'sent' && req.status === 'Approved' ? handleConfirmReceipt : undefined}
           />
         ))}
       </div>

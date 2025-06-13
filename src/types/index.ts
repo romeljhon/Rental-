@@ -16,7 +16,7 @@ export interface UserProfile {
 }
 
 export interface RentalItem {
-  id: string;
+  id:string;
   name: string;
   description: string;
   category: string; // Could be an enum or a string referencing RentalCategory.name
@@ -49,7 +49,7 @@ export interface RentalRequest {
   owner: UserProfile;
   startDate: Date;
   endDate: Date;
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'Completed' | 'AwaitingPayment';
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'Completed' | 'AwaitingPayment' | 'ReceiptConfirmed';
   totalPrice: number;
   requestedAt: Date;
   chosenDeliveryMethod?: 'Pick Up' | 'Delivery'; // New field for renter's choice

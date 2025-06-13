@@ -4,7 +4,7 @@ import type { RentalRequest } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, Check, X, Hourglass } from 'lucide-react'; // DollarSign removed
+import { CalendarDays, Check, X, Hourglass, PackageCheck } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface RequestCardProps {
@@ -13,29 +13,31 @@ interface RequestCardProps {
   onApprove?: (requestId: string) => void;
   onReject?: (requestId: string) => void;
   onCancel?: (requestId: string) => void;
+  onConfirmReceipt?: (requestId: string) => void;
 }
 
 const statusColors: Record<RentalRequest['status'], string> = {
   Pending: 'bg-yellow-500/80 hover:bg-yellow-500/90 text-yellow-foreground',
   Approved: 'bg-green-500/80 hover:bg-green-500/90 text-green-foreground',
+  ReceiptConfirmed: 'bg-sky-500/80 hover:bg-sky-500/90 text-sky-foreground', // New color for ReceiptConfirmed
   Rejected: 'bg-red-500/80 hover:bg-red-500/90 text-red-foreground',
   Cancelled: 'bg-gray-500/80 hover:bg-gray-500/90 text-gray-foreground',
   Completed: 'bg-blue-500/80 hover:bg-blue-500/90 text-blue-foreground',
   AwaitingPayment: 'bg-orange-500/80 hover:bg-orange-500/90 text-orange-foreground',
 };
 
-// AwaitingPayment uses Hourglass temporarily as DollarSign was removed for general currency icon
 const statusIcons: Record<RentalRequest['status'], React.ElementType> = {
   Pending: Hourglass,
   Approved: Check,
+  ReceiptConfirmed: PackageCheck, // New icon
   Rejected: X,
   Cancelled: X,
   Completed: Check,
-  AwaitingPayment: Hourglass, 
+  AwaitingPayment: Hourglass,
 };
 
 
-export function RequestCard({ request, type, onApprove, onReject, onCancel }: RequestCardProps) {
+export function RequestCard({ request, type, onApprove, onReject, onCancel, onConfirmReceipt }: RequestCardProps) {
   const StatusIcon = statusIcons[request.status];
   return (
     <Card className="shadow-md hover:shadow-lg transition-shadow duration-200">
@@ -72,23 +74,28 @@ export function RequestCard({ request, type, onApprove, onReject, onCancel }: Re
         </Badge>
       </CardHeader>
       
-      {(type === 'received' && request.status === 'Pending' && onApprove && onReject) && (
-        <CardFooter className="pt-2 pb-4 flex justify-end space-x-2">
-          <Button variant="outline" size="sm" onClick={() => onReject(request.id)} className="border-destructive text-destructive hover:bg-destructive/10">
-            <X className="w-4 h-4 mr-1.5" /> Reject
-          </Button>
-          <Button size="sm" onClick={() => onApprove(request.id)} className="bg-green-600 hover:bg-green-700 text-white">
-            <Check className="w-4 h-4 mr-1.5" /> Approve
-          </Button>
-        </CardFooter>
-      )}
-      {(type === 'sent' && (request.status === 'Pending' || request.status === 'Approved') && onCancel) && (
-        <CardFooter className="pt-2 pb-4 flex justify-end">
-          <Button variant="ghost" size="sm" onClick={() => onCancel(request.id)} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
-            <X className="w-4 h-4 mr-1.5" /> Cancel Request
-          </Button>
-        </CardFooter>
-      )}
+      <CardFooter className="pt-2 pb-4 flex justify-end space-x-2">
+        {type === 'received' && request.status === 'Pending' && onApprove && onReject && (
+          <>
+            <Button variant="outline" size="sm" onClick={() => onReject(request.id)} className="border-destructive text-destructive hover:bg-destructive/10">
+              <X className="w-4 h-4 mr-1.5" /> Reject
+            </Button>
+            <Button size="sm" onClick={() => onApprove(request.id)} className="bg-green-600 hover:bg-green-700 text-white">
+              <Check className="w-4 h-4 mr-1.5" /> Approve
+            </Button>
+          </>
+        )}
+        {type === 'sent' && request.status === 'Approved' && onConfirmReceipt && (
+           <Button size="sm" onClick={() => onConfirmReceipt(request.id)} className="bg-sky-600 hover:bg-sky-700 text-white">
+             <PackageCheck className="w-4 h-4 mr-1.5" /> Confirm Item Receipt
+           </Button>
+        )}
+        {(request.status === 'Pending' || request.status === 'Approved') && onCancel && (
+           <Button variant="ghost" size="sm" onClick={() => onCancel(request.id)} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+             <X className="w-4 h-4 mr-1.5" /> Cancel Request
+           </Button>
+        )}
+      </CardFooter>
     </Card>
   );
 }
