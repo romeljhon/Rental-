@@ -136,20 +136,24 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
           <CardHeader>
             <CardTitle className="font-headline text-xl">About the Owner</CardTitle>
           </CardHeader>
-          <CardContent className="flex items-center space-x-4">
-            <Image 
-              src={item.owner.avatarUrl || 'https://placehold.co/100x100.png'} 
-              alt={item.owner.name} 
-              width={60} 
-              height={60} 
-              className="rounded-full"
-              data-ai-hint="profile person" 
-            />
-            <div>
-              <p className="font-semibold text-lg">{item.owner.name}</p>
-              <p className="text-sm text-muted-foreground">Joined {new Date().getFullYear() -1} {/* Mock join date */}</p> 
-            </div>
-            <Link href="/messages" passHref className="ml-auto">
+          <CardContent className="flex items-center justify-between space-x-4">
+            <Link href={`/users/${item.owner.id}`} passHref>
+              <div className="flex items-center space-x-4 group cursor-pointer">
+                <Image 
+                  src={item.owner.avatarUrl || 'https://placehold.co/100x100.png'} 
+                  alt={item.owner.name} 
+                  width={60} 
+                  height={60} 
+                  className="rounded-full group-hover:ring-2 group-hover:ring-primary transition-all"
+                  data-ai-hint="profile person" 
+                />
+                <div>
+                  <p className="font-semibold text-lg group-hover:text-primary transition-colors">{item.owner.name}</p>
+                  <p className="text-sm text-muted-foreground">Joined {new Date().getFullYear() -1}</p> 
+                </div>
+              </div>
+            </Link>
+            <Link href={`/messages?with=${item.owner.id}&contextItemId=${item.id}`} passHref>
               <Button variant="outline" size="sm">
                 <MessageSquare className="w-4 h-4 mr-2" /> Contact Owner
               </Button>
