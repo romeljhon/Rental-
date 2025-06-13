@@ -1,10 +1,12 @@
 
+"use client";
+import React, { useState } from 'react';
 import Image from 'next/image';
 import type { RentalRequest } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDays, Check, X, Hourglass, PackageCheck } from 'lucide-react';
+import { CalendarDays, Check, X, Hourglass, PackageCheck, Star } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface RequestCardProps {
@@ -15,6 +17,7 @@ interface RequestCardProps {
   onReject?: (requestId: string) => void;
   onCancel?: (requestId: string) => void;
   onConfirmReceipt?: (requestId: string) => void;
+  onRateItem?: (requestId: string, rating: number) => void;
 }
 
 const statusColors: Record<RentalRequest['status'], string> = {
@@ -38,10 +41,19 @@ const statusIcons: Record<RentalRequest['status'], React.ElementType> = {
 };
 
 
-export function RequestCard({ request, type, currentViewingUserId, onApprove, onReject, onCancel, onConfirmReceipt }: RequestCardProps) {
+export function RequestCard({ request, type, currentViewingUserId, onApprove, onReject, onCancel, onConfirmReceipt, onRateItem }: RequestCardProps) {
   const StatusIcon = statusIcons[request.status];
   const isOwnerViewing = type === 'received' && currentViewingUserId === request.owner.id;
   const isRequesterViewing = type === 'sent' && currentViewingUserId === request.requester.id;
+  
+  const [currentRating, setCurrentRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+
+  const handleRatingSubmit = () => {
+    if (onRateItem && currentRating > 0) {
+      onRateItem(request.id, currentRating);
+    }
+  };
 
   return (
     <Card className="shadow-md hover:shadow-lg transition-shadow duration-200">
@@ -78,6 +90,47 @@ export function RequestCard({ request, type, currentViewingUserId, onApprove, on
         </Badge>
       </CardHeader>
       
+      {isRequesterViewing && request.status === 'Completed' && onRateItem && (
+        <CardContent className="pt-2 pb-3 border-t">
+          {!request.ratingGiven ? (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-foreground">Rate your experience:</p>
+              <div className="flex items-center space-x-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setCurrentRating(star)}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    aria-label={`Rate ${star} out of 5 stars`}
+                    className="p-0.5"
+                  >
+                    <Star
+                      className={`w-5 h-5 transition-colors 
+                                 ${(hoverRating || currentRating) >= star 
+                                   ? 'text-yellow-400 fill-yellow-400' 
+                                   : 'text-muted-foreground hover:text-yellow-300'}`}
+                    />
+                  </button>
+                ))}
+              </div>
+              {currentRating > 0 && (
+                <Button size="sm" onClick={handleRatingSubmit} className="mt-2 bg-accent hover:bg-accent/90">
+                  Submit Rating ({currentRating} Stars)
+                </Button>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-foreground">
+              You rated: <span className="font-semibold text-primary">{request.ratingGiven}</span> stars
+              {[...Array(request.ratingGiven)].map((_, i) => (
+                  <Star key={i} className="inline-block w-4 h-4 ml-0.5 text-yellow-400 fill-yellow-400" />
+              ))}
+            </p>
+          )}
+        </CardContent>
+      )}
+
       <CardFooter className="pt-2 pb-4 flex justify-end space-x-2">
         {isOwnerViewing && request.status === 'Pending' && onApprove && onReject && (
           <>

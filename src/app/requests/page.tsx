@@ -15,10 +15,11 @@ const otherUserProfile: UserProfile = { id: 'user456', name: 'Bob The Builder', 
 const initialMockRequests: RentalRequest[] = [
   { id: 'req1', itemId: 'item_rented_by_john', item: {id: 'item_rented_by_john', name: 'Yoga Mat', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 10}, requester: MOCK_USER_JOHN, owner: MOCK_USER_ALICE, startDate: new Date('2024-08-01'), endDate: new Date('2024-08-05'), status: 'Approved', totalPrice: 50, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 24) },
   { id: 'req2', itemId: 'item_owned_by_john', item: {id: 'item_owned_by_john', name: 'DSLR Camera', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 50}, requester: MOCK_USER_ALICE, owner: MOCK_USER_JOHN, startDate: new Date('2024-08-10'), endDate: new Date('2024-08-12'), status: 'Approved', totalPrice: 150, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 48) },
-  { id: 'req3', itemId: 'item_rented_by_alice', item: {id: 'item_rented_by_alice', name: 'Mountain Bike', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 35}, requester: MOCK_USER_ALICE, owner: MOCK_USER_JOHN, startDate: new Date('2024-07-20'), endDate: new Date('2024-07-22'), status: 'Completed', totalPrice: 105, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10) },
+  { id: 'req3', itemId: 'item_rented_by_alice_completed', item: {id: 'item_rented_by_alice_completed', name: 'Mountain Bike', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 35}, requester: MOCK_USER_ALICE, owner: MOCK_USER_JOHN, startDate: new Date('2024-07-20'), endDate: new Date('2024-07-22'), status: 'Completed', totalPrice: 105, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10) },
   { id: 'req4', itemId: 'item_owned_by_alice', item: {id: 'item_owned_by_alice', name: 'Ukulele', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 12}, requester: MOCK_USER_JOHN, owner: MOCK_USER_ALICE, startDate: new Date('2024-08-15'), endDate: new Date('2024-08-18'), status: 'Pending', totalPrice: 48, requestedAt: new Date(Date.now() - 1000 * 60 * 30) },
   { id: 'req5', itemId: '5', item: {id: '5', name: 'Downtown Apartment', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 120}, requester: MOCK_USER_JOHN, owner: otherUserProfile, startDate: new Date('2024-09-01'), endDate: new Date('2024-09-07'), status: 'Rejected', totalPrice: 840, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 5) },
   { id: 'req6', itemId: 'item_owned_by_john_receipt_confirmed', item: {id: 'item_owned_by_john_receipt_confirmed', name: 'Vintage Leather Jacket', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 20}, requester: MOCK_USER_ALICE, owner: MOCK_USER_JOHN, startDate: new Date('2024-08-20'), endDate: new Date('2024-08-22'), status: 'ReceiptConfirmed', totalPrice: 60, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 72) },
+  { id: 'req7_john_completed_rent', itemId: 'item_rented_by_john_for_rating', item: {id: 'item_rented_by_john_for_rating', name: 'Board Game Collection', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 15}, requester: MOCK_USER_JOHN, owner: MOCK_USER_ALICE, startDate: new Date('2024-07-10'), endDate: new Date('2024-07-15'), status: 'Completed', totalPrice: 75, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15), ratingGiven: undefined },
 ];
 
 const REQUESTS_STORAGE_KEY = 'rentaleaseRentalRequests';
@@ -33,6 +34,7 @@ const parseStoredRequests = (storedRequestsJson: string | null): RentalRequest[]
       startDate: new Date(req.startDate),
       endDate: new Date(req.endDate),
       requestedAt: new Date(req.requestedAt),
+      ratingGiven: req.ratingGiven, // Ensure ratingGiven is parsed
     }));
   } catch (error) {
     console.error("Error parsing requests from localStorage:", error);
@@ -99,13 +101,13 @@ export default function RequestsPage() {
   }, [requests, currentUserId]);
 
 
-  const updateRequestStatusById = (requestId: string, newStatus: RentalRequest['status']) => {
+  const updateRequestStatusById = (requestId: string, newStatus: RentalRequest['status'], rating?: number) => {
     const originalRequest = requests.find(req => req.id === requestId);
     if (!originalRequest || !currentUserProfile) return;
 
     setRequests(prevRequests =>
       prevRequests.map(req =>
-        req.id === requestId ? { ...req, status: newStatus } : req
+        req.id === requestId ? { ...req, status: newStatus, ratingGiven: rating !== undefined ? rating : req.ratingGiven } : req
       ).sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime())
     );
 
@@ -129,7 +131,11 @@ export default function RequestsPage() {
         notifTargetUserId = originalRequest.owner.id;
         notifTitle = 'Item Receipt Confirmed';
         notifMessage = `${originalRequest.requester.name} confirmed receipt of ${originalRequest.item.name}.`;
+    } else if (newStatus === 'Completed' && rating !== undefined) { 
+        // No separate notification for rating submission itself, already covered by toast.
+        // But if rating triggers other flows (e.g., owner notification of new rating), add here.
     }
+
 
     if (notifTargetUserId && notifTitle && notifTargetUserId !== currentUserProfile.id) { // Don't notify self
         addNotification({
@@ -164,6 +170,25 @@ export default function RequestsPage() {
     toast({ title: 'Item Receipt Confirmed', description: 'The owner has been notified.' });
   };
 
+  const handleRateItem = (requestId: string, rating: number) => {
+    const requestToUpdate = requests.find(req => req.id === requestId);
+    if (requestToUpdate) {
+      // Update the request with the rating. Status remains 'Completed'.
+      setRequests(prevRequests =>
+        prevRequests.map(req =>
+          req.id === requestId ? { ...req, ratingGiven: rating } : req
+        ).sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime())
+      );
+      toast({ title: 'Rating Submitted!', description: 'Thank you for your feedback.' });
+      
+      // In a real app, you would also trigger an update to the item's average rating:
+      // e.g., updateItemAverageRating(requestToUpdate.itemId, rating);
+      // This would involve fetching the item, recalculating its average rating and reviewsCount,
+      // and saving it back to your database or global item state.
+      console.log(`Rating ${rating} submitted for request ${requestId}. Item ID: ${requestToUpdate.itemId}. This would typically update the item's average rating on the backend.`);
+    }
+  };
+
 
   if (isLoading || !currentUserId || !currentUserProfile) {
     return (
@@ -196,6 +221,7 @@ export default function RequestsPage() {
             onReject={type === 'received' && req.status === 'Pending' ? handleReject : undefined}
             onCancel={(req.status === 'Pending' || req.status === 'Approved') ? handleCancel : undefined}
             onConfirmReceipt={type === 'sent' && req.status === 'Approved' && req.requester.id === currentUserId ? handleConfirmReceipt : undefined}
+            onRateItem={type === 'sent' && req.status === 'Completed' && req.requester.id === currentUserId ? handleRateItem : undefined}
           />
         ))}
       </div>
@@ -220,4 +246,3 @@ export default function RequestsPage() {
     </div>
   );
 }
-

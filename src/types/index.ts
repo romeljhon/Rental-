@@ -53,6 +53,7 @@ export interface RentalRequest {
   totalPrice: number;
   requestedAt: Date;
   chosenDeliveryMethod?: 'Pick Up' | 'Delivery'; // New field for renter's choice
+  ratingGiven?: number; // Rating given by the renter for this specific rental
   // messageThreadId?: string; // Link to a messaging thread
 }
 
