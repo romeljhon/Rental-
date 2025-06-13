@@ -12,6 +12,7 @@ import { ThemeToggleButton } from './ThemeToggleButton';
 import { getActiveUserProfile, setActiveUserId, ALL_MOCK_USERS, getActiveUserId } from '@/lib/auth';
 import { useNotifications } from '@/contexts/NotificationContext'; // Added
 import { formatDistanceToNowStrict } from 'date-fns'; // Added for timestamp
+import { Badge } from '@/components/ui/badge'; // Added missing import
 
 const navItems: NavItem[] = [
   { href: '/', label: 'Browse', icon: LayoutGrid, exact: true },
