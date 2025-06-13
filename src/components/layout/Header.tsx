@@ -12,7 +12,7 @@ import { ThemeToggleButton } from './ThemeToggleButton';
 import { getActiveUserProfile, setActiveUserId, ALL_MOCK_USERS, getActiveUserId } from '@/lib/auth';
 import { useNotifications } from '@/contexts/NotificationContext'; // Added
 import { formatDistanceToNowStrict } from 'date-fns'; // Added for timestamp
-import { Badge } from '@/components/ui/badge'; // Added missing import
+import { Badge } from '@/components/ui/badge';
 
 const navItems: NavItem[] = [
   { href: '/', label: 'Browse', icon: LayoutGrid, exact: true },
@@ -244,12 +244,7 @@ export function Header() {
                          <span className="text-xl font-bold text-primary font-headline">RentalEase</span>
                       </Link>
                     </SheetClose>
-                    <SheetClose asChild>
-                       <Button variant="ghost" size="icon">
-                         <X className="h-6 w-6" />
-                         <span className="sr-only">Close menu</span>
-                       </Button>
-                    </SheetClose>
+                    {/* The redundant close button was here and has been removed */}
                   </div>
                    <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -317,3 +312,4 @@ export function Header() {
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
+
