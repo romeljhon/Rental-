@@ -10,11 +10,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { MapPin, Star, MessageSquare, CheckCircle, Tag, Users, CalendarDays, ChevronLeft, ChevronRight, Package, Truck, ListChecks, CalendarClock } from 'lucide-react';
+import { MapPin, Star, MessageSquare, CheckCircle, Tag, Users, CalendarDays, ChevronLeft, ChevronRight, Package, Truck, ListChecks, CalendarClock, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DateRange } from 'react-day-picker';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
+import { getActiveUserId } from '@/lib/auth'; // Import auth function
 
 interface ItemDetailViewProps {
   item: RentalItem;
@@ -26,6 +27,11 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [chosenDeliveryByRenter, setChosenDeliveryByRenter] = useState<'Pick Up' | 'Delivery' | null>(null);
   const [detailedAvailabilityMessage, setDetailedAvailabilityMessage] = useState<string | null>(null);
+  const [activeUserId, setActiveUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setActiveUserId(getActiveUserId());
+  }, []);
 
   useEffect(() => {
     if (item.availabilityStatus === 'Rented' && item.availableFromDate) {
@@ -112,7 +118,10 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
     return <span className="flex items-center">{icon} {text}</span>;
   };
 
+  const isOwnerViewing = activeUserId === item.owner.id;
+
   const isRequestButtonDisabled = 
+    isOwnerViewing || // Disable if owner is viewing
     !selectedRange?.from || 
     !selectedRange?.to ||
     (item.availabilityStatus !== 'Available') ||
@@ -227,7 +236,7 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
               </div>
             </Link>
             <Link href={`/messages?with=${item.owner.id}&contextItemId=${item.id}`} passHref>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" disabled={isOwnerViewing}>
                 <MessageSquare className="w-4 h-4 mr-2" /> Contact Owner
               </Button>
             </Link>
@@ -246,7 +255,13 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
             </div>
           </CardHeader>
           <CardContent>
-            {item.availabilityStatus === 'Available' ? (
+            {isOwnerViewing ? (
+              <div className="p-4 text-center bg-muted rounded-md">
+                <Info className="w-6 h-6 mx-auto mb-2 text-primary" />
+                <p className="font-semibold text-lg text-foreground">This is your item.</p>
+                <p className="text-sm text-muted-foreground">You cannot rent an item you own.</p>
+              </div>
+            ) : item.availabilityStatus === 'Available' ? (
               <>
                 <AvailabilityCalendar 
                   onDateSelect={handleDateSelect} 
