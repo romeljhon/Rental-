@@ -124,6 +124,56 @@ export function Header() {
     </>
   );
 
+  const NotificationBellDropdown = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative text-foreground hover:text-primary hover:bg-accent/10">
+          <Bell className="h-5 w-5" />
+          {currentUnreadCount > 0 && (
+            <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-accent ring-2 ring-background text-xs font-bold flex items-center justify-center">
+            </span>
+          )}
+          <span className="sr-only">Notifications</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80 md:w-96">
+        <DropdownMenuLabel className="flex justify-between items-center">
+          Notifications
+          {currentUnreadCount > 0 && <Badge variant="default" className="bg-accent text-accent-foreground">{currentUnreadCount} New</Badge>}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {userNotifications.length === 0 ? (
+           <DropdownMenuItem disabled className="text-center text-muted-foreground py-4">No notifications yet.</DropdownMenuItem>
+        ) : (
+          <>
+            <div className="max-h-80 overflow-y-auto">
+              {userNotifications.slice(0, 10).map(notif => ( 
+                <DropdownMenuItem 
+                  key={notif.id} 
+                  onClick={() => handleNotificationClick(notif)} 
+                  className={cn("flex flex-col items-start gap-1 p-3 cursor-pointer hover:bg-muted/50", !notif.isRead && "bg-primary/5")}
+                >
+                  <div className="w-full flex justify-between items-center">
+                     <span className={cn("font-semibold text-sm", !notif.isRead && "text-primary")}>{notif.title}</span>
+                     <span className="text-xs text-muted-foreground">
+                       {formatDistanceToNowStrict(notif.timestamp, { addSuffix: true })}
+                     </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground w-full truncate">{notif.message}</p>
+                </DropdownMenuItem>
+              ))}
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleMarkAllReadClick} disabled={currentUnreadCount === 0} className="text-center justify-center">
+              <Mail className="mr-2 h-4 w-4" /> Mark all as read
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -132,6 +182,7 @@ export function Header() {
           <span className="text-2xl font-bold text-primary font-headline">RentalEase</span>
         </Link>
 
+        {/* Desktop Navigation & Controls */}
         <nav className="hidden sm:flex items-center space-x-1">
           {navItems.map((item) => (
             <NavLink key={item.href} {...item} />
@@ -171,60 +222,13 @@ export function Header() {
             </DropdownMenu>
           )}
           
-          {/* Notification Bell Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative text-foreground hover:text-primary hover:bg-accent/10">
-                <Bell className="h-5 w-5" />
-                {currentUnreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-accent ring-2 ring-background text-xs font-bold flex items-center justify-center">
-                     {/* For a number inside, adjust styling or use a proper badge component from ShadCN if available */}
-                  </span>
-                )}
-                <span className="sr-only">Notifications</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80 md:w-96">
-              <DropdownMenuLabel className="flex justify-between items-center">
-                Notifications
-                {currentUnreadCount > 0 && <Badge variant="default" className="bg-accent text-accent-foreground">{currentUnreadCount} New</Badge>}
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {userNotifications.length === 0 ? (
-                 <DropdownMenuItem disabled className="text-center text-muted-foreground py-4">No notifications yet.</DropdownMenuItem>
-              ) : (
-                <>
-                  <div className="max-h-80 overflow-y-auto">
-                    {userNotifications.slice(0, 10).map(notif => ( // Show recent 10
-                      <DropdownMenuItem 
-                        key={notif.id} 
-                        onClick={() => handleNotificationClick(notif)} 
-                        className={cn("flex flex-col items-start gap-1 p-3 cursor-pointer hover:bg-muted/50", !notif.isRead && "bg-primary/5")}
-                      >
-                        <div className="w-full flex justify-between items-center">
-                           <span className={cn("font-semibold text-sm", !notif.isRead && "text-primary")}>{notif.title}</span>
-                           <span className="text-xs text-muted-foreground">
-                             {formatDistanceToNowStrict(notif.timestamp, { addSuffix: true })}
-                           </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground w-full truncate">{notif.message}</p>
-                      </DropdownMenuItem>
-                    ))}
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleMarkAllReadClick} disabled={currentUnreadCount === 0} className="text-center justify-center">
-                    <Mail className="mr-2 h-4 w-4" /> Mark all as read
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
+          <NotificationBellDropdown />
           <ThemeToggleButton />
         </nav>
 
-        {/* Mobile Menu Setup */}
+        {/* Mobile Controls & Menu Setup */}
         <div className="sm:hidden flex items-center gap-1">
+          <NotificationBellDropdown />
           <ThemeToggleButton />
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
@@ -244,7 +248,6 @@ export function Header() {
                          <span className="text-xl font-bold text-primary font-headline">RentalEase</span>
                       </Link>
                     </SheetClose>
-                    {/* The redundant close button was here and has been removed */}
                   </div>
                    <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -284,21 +287,6 @@ export function Header() {
                   {navItems.map((item) => (
                     <NavLink key={item.href} {...item} />
                   ))}
-                   <Button variant="ghost" className={cn(
-                      'flex items-center gap-2 justify-start w-full sm:w-auto text-sm text-foreground hover:bg-accent/10 hover:text-accent-foreground relative'
-                    )}
-                    onClick={() => {
-                        // For mobile, clicking notifications could take to a dedicated page or open a modal
-                        // For now, let's keep it consistent with desktop: opens a dropdown (if we add a mobile notification dropdown)
-                        setIsMobileMenuOpen(false); // Close menu, main bell icon handles dropdown
-                      }} 
-                    >
-                    <Bell className="h-4 w-4" />
-                    Notifications
-                    {currentUnreadCount > 0 && ( 
-                      <span className="absolute top-1/2 right-3 -translate-y-1/2 block h-2 w-2 rounded-full bg-accent" />
-                    )}
-                  </Button>
                 </nav>
               </div>
             </SheetContent>
@@ -312,4 +300,3 @@ export function Header() {
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
-
