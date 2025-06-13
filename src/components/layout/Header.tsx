@@ -76,7 +76,7 @@ export function Header() {
           }}
           className={cn(
             "cursor-pointer",
-            pathname === mode.href && "bg-accent/20"
+            (pathname === mode.href || (mode.href === '/' && (pathname === '/' || pathname.startsWith('/items/')))) && "bg-accent/20"
           )}
         >
           <mode.icon className="mr-2 h-4 w-4" />
@@ -131,13 +131,16 @@ export function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-full max-w-xs bg-background p-0">
+               <SheetTitle className="sr-only">Mobile Navigation Menu</SheetTitle>
                <div className="flex flex-col h-full">
                 <div className="p-6 border-b">
                   <div className="mb-6 flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-2" passHref onClick={() => setIsMobileMenuOpen(false)}>
-                       <Home className="h-6 w-6 text-primary" />
-                       <span className="text-xl font-bold text-primary font-headline">RentalEase</span>
-                    </Link>
+                    <SheetClose asChild>
+                      <Link href="/" className="flex items-center gap-2" passHref>
+                         <Home className="h-6 w-6 text-primary" />
+                         <span className="text-xl font-bold text-primary font-headline">RentalEase</span>
+                      </Link>
+                    </SheetClose>
                     <SheetClose asChild>
                        <Button variant="ghost" size="icon">
                          <X className="h-6 w-6" />
@@ -190,3 +193,4 @@ export function Header() {
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
+
