@@ -71,23 +71,25 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
 
   const renderDeliveryMethodInfo = () => {
     if (!item.deliveryMethod) return null;
+    let icon, text;
 
     switch (item.deliveryMethod) {
       case 'Pick Up':
-        return <span className="flex items-center"><Package className="w-4 h-4 mr-1.5 text-primary" /> Pick Up Only</span>;
+        icon = <Package className="w-4 h-4 mr-1.5 text-primary" />;
+        text = "Pick Up Only";
+        break;
       case 'Delivery':
-        return <span className="flex items-center"><Truck className="w-4 h-4 mr-1.5 text-primary" /> Delivery Only</span>;
+        icon = <Truck className="w-4 h-4 mr-1.5 text-primary" />;
+        text = "Delivery Only";
+        break;
       case 'Both':
-        return (
-          <span className="flex items-center">
-            <Package className="w-4 h-4 mr-1 text-primary" />
-            <Truck className="w-4 h-4 mr-1.5 text-primary" />
-            Pick Up or Delivery
-          </span>
-        );
+        icon = <ListChecks className="w-4 h-4 mr-1.5 text-primary" />;
+        text = "Pick Up or Delivery";
+        break;
       default:
         return null;
     }
+    return <span className="flex items-center">{icon} {text}</span>;
   };
 
   const isRequestButtonDisabled = 

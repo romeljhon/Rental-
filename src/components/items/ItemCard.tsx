@@ -1,7 +1,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { MapPin, Tag, Star, Eye, Edit, Trash2 } from 'lucide-react';
+import { MapPin, Tag, Star, Eye, Edit, Trash2, Package, Truck, ListChecks } from 'lucide-react';
 import type { RentalItem } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,21 @@ interface ItemCardProps {
 }
 
 export function ItemCard({ item, onEdit, onRemove }: ItemCardProps) {
+
+  const renderDeliveryIcon = () => {
+    if (!item.deliveryMethod) return null;
+    switch (item.deliveryMethod) {
+      case 'Pick Up':
+        return <Package className="w-3 h-3 mr-1 text-primary" title="Pick Up Only" />;
+      case 'Delivery':
+        return <Truck className="w-3 h-3 mr-1 text-primary" title="Delivery Only" />;
+      case 'Both':
+        return <ListChecks className="w-3 h-3 mr-1 text-primary" title="Pick Up or Delivery" />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <Card className="flex flex-col h-full overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg">
       <CardHeader className="p-0 relative">
@@ -50,12 +65,20 @@ export function ItemCard({ item, onEdit, onRemove }: ItemCardProps) {
         </CardTitle>
         <p className="text-sm text-muted-foreground line-clamp-2 mb-2 h-10">{item.description}</p>
         
-        {item.location && (
-          <div className="flex items-center text-xs text-muted-foreground mb-1">
-            <MapPin className="w-3 h-3 mr-1.5" />
-            {item.location}
-          </div>
-        )}
+        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+          {item.location && (
+            <div className="flex items-center">
+              <MapPin className="w-3 h-3 mr-1.5" />
+              {item.location}
+            </div>
+          )}
+          {item.deliveryMethod && (
+            <div className="flex items-center" title={`Delivery: ${item.deliveryMethod}`}>
+              {renderDeliveryIcon()}
+              {item.deliveryMethod}
+            </div>
+          )}
+        </div>
       </CardContent>
       <CardFooter className="p-4 flex items-center justify-between border-t">
         <div className="flex items-center font-semibold text-primary">
