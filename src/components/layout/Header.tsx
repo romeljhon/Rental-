@@ -1,10 +1,11 @@
+
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, LayoutGrid, PlusCircle, CalendarCheck, MessageCircle, Menu, X } from 'lucide-react';
 import type { NavItem } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetClose } from '@/components/ui/sheet'; // Added SheetTitle and SheetClose
 import React from 'react';
 
 const navItems: NavItem[] = [
@@ -64,17 +65,18 @@ export function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-full max-w-xs bg-background p-6">
+              <SheetTitle className="sr-only">Mobile Navigation</SheetTitle>
               <div className="mb-6 flex items-center justify-between">
-                <Link href="/" className="flex items-center gap-2" passHref>
+                <Link href="/" className="flex items-center gap-2" passHref onClick={() => setIsMobileMenuOpen(false)}>
                    <Home className="h-6 w-6 text-primary" />
                    <span className="text-xl font-bold text-primary font-headline">RentalEase</span>
                 </Link>
-                <SheetTrigger asChild>
-                   <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)}>
+                <SheetClose asChild>
+                   <Button variant="ghost" size="icon">
                      <X className="h-6 w-6" />
                      <span className="sr-only">Close menu</span>
                    </Button>
-                </SheetTrigger>
+                </SheetClose>
               </div>
               <nav className="flex flex-col space-y-3">
                 {navItems.map((item) => (
