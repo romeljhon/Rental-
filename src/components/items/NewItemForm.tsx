@@ -45,14 +45,14 @@ const formSchema = z.object({
   description: z.string().min(10, { message: 'Description must be at least 10 characters long.' }),
   pricePerDay: z.coerce.number().min(0.01, { message: 'Price must be a positive number.' }),
   deliveryMethod: z.enum(['Pick Up', 'Delivery', 'Both'], { required_error: 'Please select a delivery method.' }),
-  images: z.any().optional(), 
+  images: z.any().optional(),
   features: z.string().optional(),
 });
 
 type NewItemFormValues = z.infer<typeof formSchema>;
 
 interface NewItemFormProps {
-  initialData?: RentalItem; 
+  initialData?: RentalItem;
 }
 
 async function handleGenerateAIDescription(data: GenerateListingDescriptionInput) {
@@ -71,7 +71,7 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreviews, setImagePreviews] = useState<string[]>(initialData?.images || (initialData?.imageUrl ? [initialData.imageUrl] : []));
-  
+
   const isEditMode = !!initialData;
 
   const defaultValues: NewItemFormValues = {
@@ -89,7 +89,7 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: defaultValues,
   });
-  
+
   useEffect(() => {
     if (initialData) {
       form.reset({
@@ -98,13 +98,13 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
         description: initialData.description || '',
         pricePerDay: initialData.pricePerDay || 0,
         deliveryMethod: initialData.deliveryMethod as DeliveryMethodValue || 'Pick Up',
-        aiKeywords: '', 
+        aiKeywords: '',
         aiDetails: '',
         features: initialData.features?.join(', ') || '',
       });
       setImagePreviews(initialData.images || (initialData.imageUrl ? [initialData.imageUrl] : []));
     } else {
-      form.reset(defaultValues); 
+      form.reset(defaultValues);
       setImagePreviews([]);
     }
   }, [initialData, form]);
@@ -191,7 +191,7 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
           title: 'Item Listed!',
           description: `${data.itemName} has been successfully listed.`,
         });
-        form.reset(defaultValues); 
+        form.reset(defaultValues);
         setImagePreviews([]);
       }
     } catch (error) {
@@ -209,9 +209,30 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      const newPreviewsArray = Array.from(files).map(file => URL.createObjectURL(file));
-      // Add to existing previews, up to a limit of 5 total
-      setImagePreviews(prev => [...prev, ...newPreviewsArray].slice(0, 5)); 
+      const currentPreviewCount = imagePreviews.length;
+      // Determine how many new files can be processed (up to a total of 5)
+      const filesToProcess = Array.from(files).slice(0, 5 - currentPreviewCount);
+
+      filesToProcess.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          // reader.result contains the Base64 Data URI
+          if (typeof reader.result === 'string') {
+            setImagePreviews(prev => [...prev, reader.result as string].slice(0, 5)); // Ensure not to exceed 5
+          }
+        };
+        reader.onerror = (error) => {
+          console.error("Error reading file:", error);
+          toast({
+            title: "Image Upload Error",
+            description: "Could not read one of the selected files.",
+            variant: "destructive",
+          });
+        };
+        reader.readAsDataURL(file); // Read file as Data URL
+      });
+      // Clear the file input value to allow re-uploading the same file if needed after removal
+      event.target.value = '';
     }
   };
 
@@ -264,7 +285,7 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
             {errors.category && <p className="text-sm text-destructive">{errors.category.message}</p>}
           </div>
 
-          {!isEditMode && ( 
+          {!isEditMode && (
             <Card className="bg-secondary/50 p-4">
               <CardHeader className="p-0 mb-2">
                 <CardTitle className="text-lg flex items-center gap-2 font-headline"><Sparkles className="w-5 h-5 text-accent" />AI Listing Assistant</CardTitle>
@@ -286,7 +307,7 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
               </CardContent>
             </Card>
           )}
-          
+
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea id="description" {...form.register('description')} placeholder="Describe your item in detail..." rows={5} disabled={isSubmitting}/>
@@ -335,7 +356,7 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
             />
             {errors.deliveryMethod && <p className="text-sm text-destructive">{errors.deliveryMethod.message}</p>}
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="images">Upload Images (Max 5, first is primary)</Label>
             <div className="flex items-center justify-center w-full">
@@ -343,15 +364,15 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
                         <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB. Max {5 - imagePreviews.length} more.</p>
+                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB. Max {Math.max(0, 5 - imagePreviews.length)} more.</p>
                     </div>
-                    <Input 
-                      id="images-upload" 
-                      type="file" 
-                      className="hidden" 
-                      multiple 
-                      accept="image/*" 
-                      onChange={handleImageUpload} 
+                    <Input
+                      id="images-upload"
+                      type="file"
+                      className="hidden"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImageUpload}
                       disabled={isSubmitting || imagePreviews.length >= 5}
                     />
                 </label>
@@ -390,5 +411,3 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
     </Card>
   );
 }
-
-    
