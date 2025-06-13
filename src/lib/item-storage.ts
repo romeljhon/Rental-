@@ -1,5 +1,4 @@
 
-'use server'; // Keep as server action if some functions might be, but localStorage is client-side.
 // For client-side localStorage, this directive might need adjustment or functions to be client components.
 
 import type { RentalItem, UserProfile } from '@/types';
