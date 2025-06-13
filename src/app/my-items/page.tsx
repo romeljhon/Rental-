@@ -5,6 +5,19 @@ import { ItemCard } from '@/components/items/ItemCard';
 import type { RentalItem, UserProfile } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Loader2, PackageOpen, ListChecks } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
 
 // This would typically be the ID of the logged-in user.
 // For mock purposes, we use the ID of the mockUser from other pages.
@@ -24,6 +37,8 @@ const allMockItems: RentalItem[] = [
 export default function MyItemsPage() {
   const [myItems, setMyItems] = useState<RentalItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+  const [itemToRemove, setItemToRemove] = useState<RentalItem | null>(null);
 
   useEffect(() => {
     // Simulate API call to fetch items owned by the current user
@@ -33,6 +48,35 @@ export default function MyItemsPage() {
       setIsLoading(false);
     }, 500);
   }, []);
+
+  const handleEditItem = (itemId: string) => {
+    const item = myItems.find(i => i.id === itemId);
+    // In a real app, you would navigate to an edit page:
+    // router.push(`/items/${itemId}/edit`);
+    toast({
+      title: 'Edit Item (Mock)',
+      description: `You clicked edit for "${item?.name || 'this item'}". This would normally take you to an edit form.`,
+    });
+  };
+
+  const confirmRemoveItem = () => {
+    if (!itemToRemove) return;
+    setMyItems(prevItems => prevItems.filter(item => item.id !== itemToRemove.id));
+    toast({
+      title: 'Item Removed (Mock)',
+      description: `"${itemToRemove.name}" has been removed from your listings.`,
+      variant: 'destructive'
+    });
+    setItemToRemove(null); // Close the dialog
+  };
+  
+  const openRemoveConfirmation = (itemId: string) => {
+    const item = myItems.find(i => i.id === itemId);
+    if (item) {
+      setItemToRemove(item);
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -58,7 +102,12 @@ export default function MyItemsPage() {
       {myItems.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {myItems.map((item) => (
-            <ItemCard key={item.id} item={item} />
+            <ItemCard 
+              key={item.id} 
+              item={item} 
+              onEdit={handleEditItem}
+              onRemove={openRemoveConfirmation} 
+            />
           ))}
         </div>
       ) : (
@@ -70,6 +119,25 @@ export default function MyItemsPage() {
             List an Item
           </Button>
         </div>
+      )}
+
+      {itemToRemove && (
+        <AlertDialog open={!!itemToRemove} onOpenChange={(open) => !open && setItemToRemove(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to remove this item?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently remove "{itemToRemove.name}" from your listings.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setItemToRemove(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmRemoveItem} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+                Remove Item
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </div>
   );

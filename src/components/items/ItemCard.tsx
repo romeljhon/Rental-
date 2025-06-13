@@ -1,6 +1,7 @@
+
 import Image from 'next/image';
 import Link from 'next/link';
-import { DollarSign, MapPin, Tag, Star, Eye } from 'lucide-react';
+import { DollarSign, MapPin, Tag, Star, Eye, Edit, Trash2 } from 'lucide-react';
 import type { RentalItem } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,9 +9,11 @@ import { Badge } from '@/components/ui/badge';
 
 interface ItemCardProps {
   item: RentalItem;
+  onEdit?: (itemId: string) => void;
+  onRemove?: (itemId: string) => void;
 }
 
-export function ItemCard({ item }: ItemCardProps) {
+export function ItemCard({ item, onEdit, onRemove }: ItemCardProps) {
   return (
     <Card className="flex flex-col h-full overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 rounded-lg">
       <CardHeader className="p-0 relative">
@@ -59,11 +62,35 @@ export function ItemCard({ item }: ItemCardProps) {
           <DollarSign className="w-4 h-4 mr-1" />
           {item.pricePerDay} <span className="text-xs text-muted-foreground ml-1">/ day</span>
         </div>
-        <Link href={`/items/${item.id}`} passHref>
-          <Button size="sm" variant="outline" className="group">
-            View Details <Eye className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-          </Button>
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link href={`/items/${item.id}`} passHref>
+            <Button size="sm" variant="outline" className="group" aria-label={`View details for ${item.name}`}>
+              <Eye className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">View</span>
+            </Button>
+          </Link>
+          {onEdit && (
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              onClick={() => onEdit(item.id)} 
+              aria-label={`Edit ${item.name}`}
+              className="h-9 w-9 hover:bg-secondary/80"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+          )}
+          {onRemove && (
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              onClick={() => onRemove(item.id)} 
+              aria-label={`Remove ${item.name}`}
+              className="h-9 w-9 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );
