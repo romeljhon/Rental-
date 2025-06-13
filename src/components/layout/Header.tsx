@@ -65,7 +65,8 @@ export function Header() {
     }
   };
   
-  const handleMarkAllReadClick = () => {
+  const handleMarkAllReadClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
     markAllAsRead(currentActiveUserId);
   }
 
@@ -155,9 +156,9 @@ export function Header() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <div className="flex justify-around p-2 border-b">
-          <Button variant={notificationFilter === 'all' ? 'secondary' : 'ghost'} size="sm" onClick={() => setNotificationFilter('all')} className="flex-1 text-xs h-7">All</Button>
-          <Button variant={notificationFilter === 'unread' ? 'secondary' : 'ghost'} size="sm" onClick={() => setNotificationFilter('unread')} className="flex-1 text-xs h-7">Unread</Button>
-          <Button variant={notificationFilter === 'read' ? 'secondary' : 'ghost'} size="sm" onClick={() => setNotificationFilter('read')} className="flex-1 text-xs h-7">Read</Button>
+          <Button variant={notificationFilter === 'all' ? 'secondary' : 'ghost'} size="sm" onClick={(e) => { e.stopPropagation(); setNotificationFilter('all');}} className="flex-1 text-xs h-7">All</Button>
+          <Button variant={notificationFilter === 'unread' ? 'secondary' : 'ghost'} size="sm" onClick={(e) => { e.stopPropagation(); setNotificationFilter('unread');}} className="flex-1 text-xs h-7">Unread</Button>
+          <Button variant={notificationFilter === 'read' ? 'secondary' : 'ghost'} size="sm" onClick={(e) => { e.stopPropagation(); setNotificationFilter('read');}} className="flex-1 text-xs h-7">Read</Button>
         </div>
         {notificationsToDisplay.length === 0 ? (
            <DropdownMenuItem disabled className="text-center text-muted-foreground py-4">
@@ -242,9 +243,6 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          
-          <NotificationBellDropdown />
-          <ThemeToggleButton />
         </nav>
 
         {/* Mobile Controls & Menu Setup */}
@@ -309,6 +307,9 @@ export function Header() {
                     <NavLink key={item.href} {...item} />
                   ))}
                 </nav>
+                <div className="p-6 border-t">
+                  <ThemeToggleButton /> {/* Desktop Theme toggle was here, mobile uses one in main bar */}
+                </div>
               </div>
             </SheetContent>
           </Sheet>
@@ -321,3 +322,5 @@ export function Header() {
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(' ');
 }
+
+    
