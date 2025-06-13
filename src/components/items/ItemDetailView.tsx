@@ -1,6 +1,8 @@
+
 "use client";
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { AvailabilityCalendar } from '@/components/shared/AvailabilityCalendar';
 import type { RentalItem, UserProfile } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -147,9 +149,11 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
               <p className="font-semibold text-lg">{item.owner.name}</p>
               <p className="text-sm text-muted-foreground">Joined {new Date().getFullYear() -1} {/* Mock join date */}</p> 
             </div>
-            <Button variant="outline" size="sm" className="ml-auto">
-              <MessageSquare className="w-4 h-4 mr-2" /> Contact Owner
-            </Button>
+            <Link href="/messages" passHref className="ml-auto">
+              <Button variant="outline" size="sm">
+                <MessageSquare className="w-4 h-4 mr-2" /> Contact Owner
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       </div>
