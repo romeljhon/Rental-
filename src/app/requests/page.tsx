@@ -8,51 +8,83 @@ import type { RentalRequest, UserProfile } from '@/types';
 import { Loader2, Inbox } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getActiveUserId, getActiveUserProfile, MOCK_USER_JOHN, MOCK_USER_ALICE } from '@/lib/auth';
-import { useNotifications } from '@/contexts/NotificationContext'; // Added
+import { useNotifications } from '@/contexts/NotificationContext';
 
-// Original mock profiles - adjust if necessary to match MOCK_USER_JOHN/ALICE
 const otherUserProfile: UserProfile = { id: 'user456', name: 'Bob The Builder', avatarUrl: 'https://placehold.co/100x100.png' };
 
-
 const initialMockRequests: RentalRequest[] = [
-  // John's requests (as requester or owner)
   { id: 'req1', itemId: 'item_rented_by_john', item: {id: 'item_rented_by_john', name: 'Yoga Mat', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 10}, requester: MOCK_USER_JOHN, owner: MOCK_USER_ALICE, startDate: new Date('2024-08-01'), endDate: new Date('2024-08-05'), status: 'Approved', totalPrice: 50, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 24) },
   { id: 'req2', itemId: 'item_owned_by_john', item: {id: 'item_owned_by_john', name: 'DSLR Camera', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 50}, requester: MOCK_USER_ALICE, owner: MOCK_USER_JOHN, startDate: new Date('2024-08-10'), endDate: new Date('2024-08-12'), status: 'Approved', totalPrice: 150, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 48) },
-  
-  // Alice's requests (as requester or owner)
   { id: 'req3', itemId: 'item_rented_by_alice', item: {id: 'item_rented_by_alice', name: 'Mountain Bike', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 35}, requester: MOCK_USER_ALICE, owner: MOCK_USER_JOHN, startDate: new Date('2024-07-20'), endDate: new Date('2024-07-22'), status: 'Completed', totalPrice: 105, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10) },
   { id: 'req4', itemId: 'item_owned_by_alice', item: {id: 'item_owned_by_alice', name: 'Ukulele', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 12}, requester: MOCK_USER_JOHN, owner: MOCK_USER_ALICE, startDate: new Date('2024-08-15'), endDate: new Date('2024-08-18'), status: 'Pending', totalPrice: 48, requestedAt: new Date(Date.now() - 1000 * 60 * 30) },
-
-  // More generic requests
   { id: 'req5', itemId: '5', item: {id: '5', name: 'Downtown Apartment', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 120}, requester: MOCK_USER_JOHN, owner: otherUserProfile, startDate: new Date('2024-09-01'), endDate: new Date('2024-09-07'), status: 'Rejected', totalPrice: 840, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 5) },
   { id: 'req6', itemId: 'item_owned_by_john_receipt_confirmed', item: {id: 'item_owned_by_john_receipt_confirmed', name: 'Vintage Leather Jacket', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 20}, requester: MOCK_USER_ALICE, owner: MOCK_USER_JOHN, startDate: new Date('2024-08-20'), endDate: new Date('2024-08-22'), status: 'ReceiptConfirmed', totalPrice: 60, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 72) },
 ];
 
+const REQUESTS_STORAGE_KEY = 'rentaleaseRentalRequests';
+
+// Helper to parse dates from stored JSON
+const parseStoredRequests = (storedRequestsJson: string | null): RentalRequest[] => {
+  if (!storedRequestsJson) return initialMockRequests;
+  try {
+    const parsed = JSON.parse(storedRequestsJson) as RentalRequest[];
+    return parsed.map(req => ({
+      ...req,
+      startDate: new Date(req.startDate),
+      endDate: new Date(req.endDate),
+      requestedAt: new Date(req.requestedAt),
+    }));
+  } catch (error) {
+    console.error("Error parsing requests from localStorage:", error);
+    return initialMockRequests; // Fallback if parsing fails
+  }
+};
+
 export default function RequestsPage() {
   const { toast } = useToast();
-  const { addNotification } = useNotifications(); // Added
-  const [requests, setRequests] = useState<RentalRequest[]>(initialMockRequests.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
+  const { addNotification } = useNotifications();
+  const [requests, setRequests] = useState<RentalRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
 
-
+  // Load active user and requests from localStorage on initial mount or user switch
   useEffect(() => {
+    setIsLoading(true);
     const activeId = getActiveUserId();
     const activeProfile = getActiveUserProfile();
     setCurrentUserId(activeId);
     setCurrentUserProfile(activeProfile);
-    // Simulate loading, can be removed if data is fetched based on currentUserId
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 500); // Shorter delay
-  }, []); 
 
+    if (typeof window !== 'undefined') {
+      const storedRequestsJson = localStorage.getItem(REQUESTS_STORAGE_KEY);
+      const loadedRequests = parseStoredRequests(storedRequestsJson);
+      setRequests(loadedRequests.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
+    } else {
+      setRequests(initialMockRequests.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
+    }
+    setIsLoading(false);
+  }, []); // Runs once on mount
+
+  // Update localStorage whenever requests state changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && requests.length > 0) { // Avoid saving empty initial state
+      localStorage.setItem(REQUESTS_STORAGE_KEY, JSON.stringify(requests));
+    }
+  }, [requests]);
+  
+  // Re-fetch active user if it changes due to header interaction
   useEffect(() => {
     const activeId = getActiveUserId();
     if (activeId !== currentUserId) {
+        setIsLoading(true);
         setCurrentUserId(activeId);
         setCurrentUserProfile(getActiveUserProfile());
+        // Reload requests for the new user, potentially from localStorage
+        const storedRequestsJson = localStorage.getItem(REQUESTS_STORAGE_KEY);
+        const loadedRequests = parseStoredRequests(storedRequestsJson);
+        setRequests(loadedRequests.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
+        setIsLoading(false);
     }
   }, [currentUserId]); 
   
@@ -74,10 +106,9 @@ export default function RequestsPage() {
     setRequests(prevRequests =>
       prevRequests.map(req =>
         req.id === requestId ? { ...req, status: newStatus } : req
-      )
+      ).sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime())
     );
 
-    // Notification Logic
     let notifTargetUserId: string | null = null;
     let notifTitle = '';
     let notifMessage = '';
@@ -91,17 +122,16 @@ export default function RequestsPage() {
         notifTitle = 'Request Rejected';
         notifMessage = `${originalRequest.owner.name} rejected your request for ${originalRequest.item.name}.`;
     } else if (newStatus === 'Cancelled') {
-        // If owner cancelled, notify requester. If requester cancelled, notify owner.
         notifTargetUserId = originalRequest.requester.id === currentUserId ? originalRequest.owner.id : originalRequest.requester.id;
         notifTitle = 'Request Cancelled';
-        notifMessage = `The request for ${originalRequest.item.name} has been cancelled.`;
+        notifMessage = `The request for ${originalRequest.item.name} has been cancelled by ${currentUserProfile.name}.`;
     } else if (newStatus === 'ReceiptConfirmed') {
         notifTargetUserId = originalRequest.owner.id;
         notifTitle = 'Item Receipt Confirmed';
         notifMessage = `${originalRequest.requester.name} confirmed receipt of ${originalRequest.item.name}.`;
     }
 
-    if (notifTargetUserId && notifTitle) {
+    if (notifTargetUserId && notifTitle && notifTargetUserId !== currentUserProfile.id) { // Don't notify self
         addNotification({
             targetUserId: notifTargetUserId,
             eventType: newStatus === 'ReceiptConfirmed' ? 'item_receipt_confirmed' : 'request_update',
@@ -131,7 +161,7 @@ export default function RequestsPage() {
 
   const handleConfirmReceipt = (requestId: string) => {
     updateRequestStatusById(requestId, 'ReceiptConfirmed');
-    toast({ title: 'Item Receipt Confirmed', description: 'The owner has been notified. (Mock)' });
+    toast({ title: 'Item Receipt Confirmed', description: 'The owner has been notified.' });
   };
 
 
@@ -190,3 +220,4 @@ export default function RequestsPage() {
     </div>
   );
 }
+
