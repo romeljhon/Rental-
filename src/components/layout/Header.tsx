@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetTitle, SheetClose, SheetTrigger } from '@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import React, { useState, useEffect, useMemo } from 'react';
 import { ThemeToggleButton } from './ThemeToggleButton';
-import { getActiveUserProfile, setActiveUserId, ALL_MOCK_USERS, getActiveUserId } from '@/lib/auth';
+import { getActiveUserProfile, setActiveUserId, getAllMockUsers, getActiveUserId } from '@/lib/auth';
 import { useNotifications } from '@/contexts/NotificationContext'; 
 import { formatDistanceToNowStrict } from 'date-fns'; 
 import { Badge } from '@/components/ui/badge';
@@ -37,13 +37,13 @@ export function Header() {
 
   const { getNotificationsForUser, markAsRead, markAllAsRead, unreadCount } = useNotifications(); 
   const [userNotifications, setUserNotifications] = useState<Notification[]>([]);
-  const currentUnreadCount = unreadCount(currentActiveUserId);
+  const currentUnreadCount = unreadCount(currentActiveUserId || ''); // Ensure currentActiveUserId is not null
   const [notificationFilter, setNotificationFilter] = useState<'all' | 'unread' | 'read'>('all');
 
 
   useEffect(() => {
     setActiveUser(getActiveUserProfile());
-  }, [pathname, currentActiveUserId]); 
+  }, [pathname, currentActiveUserId]); // currentActiveUserId helps re-fetch profile if it changed
 
   useEffect(() => {
     if (currentActiveUserId) {
@@ -53,13 +53,15 @@ export function Header() {
 
   const handleUserSwitch = (userId: string) => {
     setActiveUserId(userId);
-    setActiveUser(ALL_MOCK_USERS.find(u => u.id === userId) || null);
+    // setActiveUser(getAllMockUsers().find(u => u.id === userId) || null); // Not needed, useEffect handles this
     setIsMobileMenuOpen(false); 
     router.refresh(); 
   };
 
   const handleNotificationClick = (notification: Notification) => {
-    markAsRead(notification.id, currentActiveUserId);
+    if (currentActiveUserId) {
+      markAsRead(notification.id, currentActiveUserId);
+    }
     if (notification.link) {
       router.push(notification.link);
     }
@@ -67,7 +69,9 @@ export function Header() {
   
   const handleMarkAllReadClick = (event: React.MouseEvent) => {
     event.stopPropagation();
-    markAllAsRead(currentActiveUserId);
+    if (currentActiveUserId) {
+      markAllAsRead(currentActiveUserId);
+    }
   }
 
   const NavLink = ({ href, label, icon: Icon, exact }: NavItem) => {
@@ -254,9 +258,13 @@ export function Header() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Switch User</DropdownMenuLabel>
+                <DropdownMenuLabel>Hi, {activeUser.name.split('(')[0].trim()}</DropdownMenuLabel>
+                 <DropdownMenuItem asChild>
+                    <Link href="/profile"><User className="mr-2 h-4 w-4" /> My Profile</Link>
+                  </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                {ALL_MOCK_USERS.map(user => (
+                <DropdownMenuLabel>Switch User</DropdownMenuLabel>
+                {getAllMockUsers().map(user => (
                   <DropdownMenuItem key={user.id} onClick={() => handleUserSwitch(user.id)} disabled={activeUser.id === user.id}>
                     <User className="mr-2 h-4 w-4" />
                     {user.name}
@@ -314,9 +322,13 @@ export function Header() {
                         </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-[calc(100vw-4rem)] max-w-[calc(theme(maxWidth.xs)-2rem)] sm:w-auto">
-                        <DropdownMenuLabel>Switch User</DropdownMenuLabel>
+                        <DropdownMenuLabel>Hi, {activeUser.name.split('(')[0].trim()}</DropdownMenuLabel>
+                        <DropdownMenuItem asChild onClick={() => setIsMobileMenuOpen(false)}>
+                          <Link href="/profile"><User className="mr-2 h-4 w-4" /> My Profile</Link>
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        {ALL_MOCK_USERS.map(user => (
+                        <DropdownMenuLabel>Switch User</DropdownMenuLabel>
+                        {getAllMockUsers().map(user => (
                             <DropdownMenuItem key={user.id} onClick={() => handleUserSwitch(user.id)} disabled={activeUser.id === user.id}>
                             <User className="mr-2 h-4 w-4" />
                             {user.name}
@@ -331,7 +343,6 @@ export function Header() {
                     <NavLink key={item.href} {...item} />
                   ))}
                 </nav>
-                {/* Theme toggle for mobile is now in the main header bar, so not needed here */}
               </div>
             </SheetContent>
           </Sheet>

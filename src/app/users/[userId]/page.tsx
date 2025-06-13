@@ -8,14 +8,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { UserCircle, PackageOpen, ArrowLeft, MessageSquare } from 'lucide-react';
-import { getAllItems } from '@/lib/item-storage'; // Updated import
-import { ALL_MOCK_USERS } from '@/lib/auth'; // To find user profile by ID
+import { getAllItems } from '@/lib/item-storage';
+import { getAllMockUsers } from '@/lib/auth'; // Changed import
 
 // This page remains a server component
 
 async function getUserData(userId: string) {
   // Simulate fetching user profile
-  const user = ALL_MOCK_USERS.find(u => u.id === userId);
+  const users = getAllMockUsers(); // Call the function
+  const user = users.find(u => u.id === userId);
   if (!user) return null;
 
   // Fetch all items and then filter
