@@ -7,11 +7,11 @@ import type { NavItem, UserProfile, Notification } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetClose, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ThemeToggleButton } from './ThemeToggleButton';
 import { getActiveUserProfile, setActiveUserId, ALL_MOCK_USERS, getActiveUserId } from '@/lib/auth';
-import { useNotifications } from '@/contexts/NotificationContext'; // Added
-import { formatDistanceToNowStrict } from 'date-fns'; // Added for timestamp
+import { useNotifications } from '@/contexts/NotificationContext'; 
+import { formatDistanceToNowStrict } from 'date-fns'; 
 import { Badge } from '@/components/ui/badge';
 
 const navItems: NavItem[] = [
@@ -33,27 +33,29 @@ export function Header() {
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [activeUser, setActiveUser] = useState<UserProfile | null>(null);
-  const currentActiveUserId = getActiveUserId(); // Get ID once
+  const currentActiveUserId = getActiveUserId(); 
 
-  const { getNotificationsForUser, markAsRead, markAllAsRead, unreadCount } = useNotifications(); // Use context
+  const { getNotificationsForUser, markAsRead, markAllAsRead, unreadCount } = useNotifications(); 
   const [userNotifications, setUserNotifications] = useState<Notification[]>([]);
   const currentUnreadCount = unreadCount(currentActiveUserId);
+  const [notificationFilter, setNotificationFilter] = useState<'all' | 'unread' | 'read'>('all');
+
 
   useEffect(() => {
     setActiveUser(getActiveUserProfile());
-  }, [pathname, currentActiveUserId]); // Re-check active user on path change or user ID change
+  }, [pathname, currentActiveUserId]); 
 
   useEffect(() => {
     if (currentActiveUserId) {
       setUserNotifications(getNotificationsForUser(currentActiveUserId));
     }
-  }, [currentActiveUserId, getNotificationsForUser, unreadCount]); // Update notifications when count changes too
+  }, [currentActiveUserId, getNotificationsForUser, unreadCount]); 
 
   const handleUserSwitch = (userId: string) => {
     setActiveUserId(userId);
     setActiveUser(ALL_MOCK_USERS.find(u => u.id === userId) || null);
-    setIsMobileMenuOpen(false); // Close mobile menu if open
-    router.refresh(); // Force re-fetch of server components & re-run client effects
+    setIsMobileMenuOpen(false); 
+    router.refresh(); 
   };
 
   const handleNotificationClick = (notification: Notification) => {
@@ -114,7 +116,7 @@ export function Header() {
           }}
           className={cn(
             "cursor-pointer",
-            (pathname === mode.href || (mode.href === '/' && (pathname === '/' || pathname.startsWith('/items/') || pathname.startsWith('/my-items')))) && "bg-accent/20"
+            (pathname === mode.href || (mode.href === '/' && (pathname === '/' || pathname.startsWith('/items/') || pathname.startsWith('/my-items') || pathname.startsWith('/requests') || pathname.startsWith('/messages') || pathname.startsWith('/users/')))) && "bg-accent/20"
           )}
         >
           <mode.icon className="mr-2 h-4 w-4" />
@@ -123,6 +125,16 @@ export function Header() {
       ))}
     </>
   );
+
+  const notificationsToDisplay = useMemo(() => {
+    if (notificationFilter === 'unread') {
+      return userNotifications.filter(n => !n.isRead);
+    }
+    if (notificationFilter === 'read') {
+      return userNotifications.filter(n => n.isRead);
+    }
+    return userNotifications;
+  }, [notificationFilter, userNotifications]);
 
   const NotificationBellDropdown = () => (
     <DropdownMenu>
@@ -142,12 +154,21 @@ export function Header() {
           {currentUnreadCount > 0 && <Badge variant="default" className="bg-accent text-accent-foreground">{currentUnreadCount} New</Badge>}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {userNotifications.length === 0 ? (
-           <DropdownMenuItem disabled className="text-center text-muted-foreground py-4">No notifications yet.</DropdownMenuItem>
+        <div className="flex justify-around p-2 border-b">
+          <Button variant={notificationFilter === 'all' ? 'secondary' : 'ghost'} size="sm" onClick={() => setNotificationFilter('all')} className="flex-1 text-xs h-7">All</Button>
+          <Button variant={notificationFilter === 'unread' ? 'secondary' : 'ghost'} size="sm" onClick={() => setNotificationFilter('unread')} className="flex-1 text-xs h-7">Unread</Button>
+          <Button variant={notificationFilter === 'read' ? 'secondary' : 'ghost'} size="sm" onClick={() => setNotificationFilter('read')} className="flex-1 text-xs h-7">Read</Button>
+        </div>
+        {notificationsToDisplay.length === 0 ? (
+           <DropdownMenuItem disabled className="text-center text-muted-foreground py-4">
+            {notificationFilter === 'unread' ? 'No unread notifications.' :
+             notificationFilter === 'read' ? 'No read notifications.' :
+             'No notifications yet.'}
+           </DropdownMenuItem>
         ) : (
           <>
             <div className="max-h-80 overflow-y-auto">
-              {userNotifications.slice(0, 10).map(notif => ( 
+              {notificationsToDisplay.slice(0, 10).map(notif => ( 
                 <DropdownMenuItem 
                   key={notif.id} 
                   onClick={() => handleNotificationClick(notif)} 
