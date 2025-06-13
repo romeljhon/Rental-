@@ -37,13 +37,13 @@ export function Header() {
 
   const { getNotificationsForUser, markAsRead, markAllAsRead, unreadCount } = useNotifications(); 
   const [userNotifications, setUserNotifications] = useState<Notification[]>([]);
-  const currentUnreadCount = unreadCount(currentActiveUserId || ''); // Ensure currentActiveUserId is not null
+  const currentUnreadCount = unreadCount(currentActiveUserId || ''); 
   const [notificationFilter, setNotificationFilter] = useState<'all' | 'unread' | 'read'>('all');
 
 
   useEffect(() => {
     setActiveUser(getActiveUserProfile());
-  }, [pathname, currentActiveUserId]); // currentActiveUserId helps re-fetch profile if it changed
+  }, [pathname, currentActiveUserId]); 
 
   useEffect(() => {
     if (currentActiveUserId) {
@@ -53,7 +53,6 @@ export function Header() {
 
   const handleUserSwitch = (userId: string) => {
     setActiveUserId(userId);
-    // setActiveUser(getAllMockUsers().find(u => u.id === userId) || null); // Not needed, useEffect handles this
     setIsMobileMenuOpen(false); 
     router.refresh(); 
   };
@@ -161,7 +160,7 @@ export function Header() {
           <Button 
             variant={notificationFilter === 'all' ? 'secondary' : 'ghost'} 
             size="sm" 
-            onPointerDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
             onClick={() => setNotificationFilter('all')} 
             className="flex-1 text-xs h-7"
           >
@@ -170,7 +169,7 @@ export function Header() {
           <Button 
             variant={notificationFilter === 'unread' ? 'secondary' : 'ghost'} 
             size="sm" 
-            onPointerDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
             onClick={() => setNotificationFilter('unread')} 
             className="flex-1 text-xs h-7"
           >
@@ -179,7 +178,7 @@ export function Header() {
           <Button 
             variant={notificationFilter === 'read' ? 'secondary' : 'ghost'} 
             size="sm" 
-            onPointerDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
             onClick={() => setNotificationFilter('read')} 
             className="flex-1 text-xs h-7"
           >
