@@ -2,10 +2,10 @@
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, LayoutGrid, PlusCircle, CalendarCheck, MessageCircle, Menu, X } from 'lucide-react';
+import { Home, LayoutGrid, PlusCircle, CalendarCheck, MessageCircle, Menu, X, Shield, Users } from 'lucide-react';
 import type { NavItem } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetClose } from '@/components/ui/sheet'; // Added SheetTitle and SheetClose
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetClose } from '@/components/ui/sheet';
 import React from 'react';
 
 const navItems: NavItem[] = [
@@ -13,6 +13,8 @@ const navItems: NavItem[] = [
   { href: '/items/new', label: 'Add Item', icon: PlusCircle },
   { href: '/requests', label: 'My Requests', icon: CalendarCheck },
   { href: '/messages', label: 'Messages', icon: MessageCircle },
+  { href: '/staff', label: 'Staff', icon: Users },
+  { href: '/admin', label: 'Admin', icon: Shield },
 ];
 
 export function Header() {
