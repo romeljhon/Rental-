@@ -13,6 +13,7 @@ import { getActiveUserProfile, setActiveUserId, getAllMockUsers, getActiveUserId
 import { useNotifications } from '@/contexts/NotificationContext'; 
 import { formatDistanceToNowStrict } from 'date-fns'; 
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 const navItems: NavItem[] = [
   { href: '/', label: 'Browse', icon: LayoutGrid, exact: true },
@@ -80,12 +81,12 @@ export function Header() {
         <Button
           variant={isActive ? 'secondary' : 'ghost'}
           className={cn(
-            'flex items-center gap-2 justify-start w-full sm:w-auto text-sm',
-            isActive ? 'text-primary-foreground bg-primary hover:bg-primary/90' : 'text-foreground hover:bg-accent/10 hover:text-accent-foreground'
+            'flex items-center gap-2 justify-start w-full sm:w-auto text-base sm:text-sm',
+            isActive ? 'text-primary-foreground bg-primary hover:bg-primary/90' : 'text-foreground hover:bg-accent/10'
           )}
           onClick={() => setIsMobileMenuOpen(false)}
         >
-          {Icon && <Icon className="h-4 w-4" />}
+          {Icon && <Icon className="h-5 w-5 sm:h-4 sm:w-4" />}
           {label}
         </Button>
       </Link>
@@ -135,7 +136,7 @@ export function Header() {
     if (notificationFilter === 'read') {
       return userNotifications.filter(n => n.isRead);
     }
-    return userNotifications;
+    return userNotifications.slice(0, 10); // show max 10 notifications
   }, [notificationFilter, userNotifications]);
 
   const NotificationBellDropdown = () => (
@@ -156,7 +157,7 @@ export function Header() {
           {currentUnreadCount > 0 && <Badge variant="default" className="bg-accent text-accent-foreground">{currentUnreadCount} New</Badge>}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <div className="flex justify-around p-2 border-b">
+        <div className="flex justify-around p-1 border-b">
           <Button 
             variant={notificationFilter === 'all' ? 'secondary' : 'ghost'} 
             size="sm" 
@@ -194,7 +195,7 @@ export function Header() {
         ) : (
           <>
             <div className="max-h-80 overflow-y-auto">
-              {notificationsToDisplay.slice(0, 10).map(notif => ( 
+              {notificationsToDisplay.map(notif => ( 
                 <DropdownMenuItem 
                   key={notif.id} 
                   onClick={() => handleNotificationClick(notif)} 
@@ -210,10 +211,14 @@ export function Header() {
                 </DropdownMenuItem>
               ))}
             </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleMarkAllReadClick} disabled={currentUnreadCount === 0} className="text-center justify-center">
-              <Mail className="mr-2 h-4 w-4" /> Mark all as read
-            </DropdownMenuItem>
+            {currentUnreadCount > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleMarkAllReadClick} disabled={currentUnreadCount === 0} className="text-center justify-center">
+                  <Mail className="mr-2 h-4 w-4" /> Mark all as read
+                </DropdownMenuItem>
+              </>
+            )}
           </>
         )}
       </DropdownMenuContent>
@@ -224,19 +229,22 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
-        <Link href="/" className="flex items-center gap-2" passHref>
+        <Link href="/" className="flex items-center gap-2 mr-4" passHref>
           <Home className="h-7 w-7 text-primary" />
-          <span className="text-2xl font-bold text-primary font-headline">RentalEase</span>
+          <span className="text-2xl font-bold text-primary font-headline hidden sm:inline">RentalEase</span>
         </Link>
 
         {/* Desktop Navigation & Controls */}
-        <nav className="hidden sm:flex items-center space-x-1">
+        <nav className="hidden sm:flex items-center gap-1">
           {navItems.map((item) => (
             <NavLink key={item.href} {...item} />
           ))}
+        </nav>
+        
+        <div className="hidden sm:flex items-center gap-1 ml-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="text-foreground hover:bg-accent/10 hover:text-accent-foreground">
+              <Button variant="ghost" className="text-foreground hover:bg-accent/10">
                 <CurrentViewIcon className="h-4 w-4 mr-2" />
                 {currentViewMode.label}
                 <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
@@ -250,7 +258,7 @@ export function Header() {
           {activeUser && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-foreground hover:bg-accent/10 hover:text-accent-foreground">
+                <Button variant="ghost" className="text-foreground hover:bg-accent/10">
                   <UserCog className="h-4 w-4 mr-2" />
                   {activeUser.name.split('(')[0].trim()}
                   <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
@@ -274,10 +282,10 @@ export function Header() {
           )}
            <NotificationBellDropdown />
            <ThemeToggleButton />
-        </nav>
+        </div>
 
         {/* Mobile Controls & Menu Setup */}
-        <div className="sm:hidden flex items-center gap-1">
+        <div className="sm:hidden flex items-center gap-1 ml-auto">
           <NotificationBellDropdown />
           <ThemeToggleButton />
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -290,8 +298,8 @@ export function Header() {
             <SheetContent side="right" className="w-full max-w-xs bg-background p-0">
                <SheetTitle className="sr-only">Mobile Navigation</SheetTitle>
                <div className="flex flex-col h-full">
-                <div className="p-6 border-b">
-                  <div className="mb-6 flex items-center justify-between">
+                <div className="p-4 border-b">
+                  <div className="mb-4 flex items-center justify-between">
                     <SheetClose asChild>
                       <Link href="/" className="flex items-center gap-2" passHref>
                          <Home className="h-6 w-6 text-primary" />
@@ -337,7 +345,7 @@ export function Header() {
                     </DropdownMenu>
                   )}
                 </div>
-                <nav className="flex-grow p-6 flex flex-col space-y-2">
+                <nav className="flex-grow p-4 flex flex-col space-y-2">
                   {navItems.map((item) => (
                     <NavLink key={item.href} {...item} />
                   ))}
@@ -349,9 +357,5 @@ export function Header() {
       </div>
     </header>
   );
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ');
 }
 

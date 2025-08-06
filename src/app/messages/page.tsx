@@ -280,7 +280,7 @@ function MessagesPageContent() {
 
   return (
     <div className="flex flex-col md:flex-row h-[calc(100vh-150px)] border bg-card rounded-xl shadow-xl overflow-hidden">
-      <div className="w-full md:w-1/3 lg:w-1/4 border-r flex flex-col">
+      <div className={`w-full md:w-1/3 lg:w-1/4 border-r flex-col ${selectedConversationId && 'hidden md:flex'}`}>
         <div className="p-4 border-b">
           <h2 className="text-xl font-bold font-headline text-primary">Chats</h2>
           <div className="relative mt-2">
@@ -308,7 +308,7 @@ function MessagesPageContent() {
         </ScrollArea>
       </div>
 
-      <div className="flex-1 flex flex-col bg-background">
+      <div className={`flex-1 flex flex-col bg-background ${!selectedConversationId && 'hidden md:flex'}`}>
         {selectedConversation && otherParticipant ? (
           <>
             <div className="p-4 border-b flex items-center space-x-3 shadow-sm">
@@ -377,5 +377,3 @@ export default function MessagesPage() {
     </Suspense>
   );
 }
-
-    
