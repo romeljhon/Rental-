@@ -252,19 +252,21 @@ export default function RequestsPage() {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold font-headline text-primary">Rental Requests</h1>
       <Tabs defaultValue="received" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:w-auto md:inline-flex mb-4">
-          <TabsTrigger value="received">Received Requests</TabsTrigger>
-          <TabsTrigger value="sent">Sent Requests</TabsTrigger>
+        <TabsList className="border-b-2 border-transparent w-full justify-start rounded-none bg-transparent p-0">
+          <TabsTrigger value="received" className="relative h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none">
+            Received Requests
+          </TabsTrigger>
+          <TabsTrigger value="sent" className="relative h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none">
+            Sent Requests
+          </TabsTrigger>
         </TabsList>
-        <TabsContent value="received">
+        <TabsContent value="received" className="mt-4">
           {renderRequestList(receivedRequests, 'received')}
         </TabsContent>
-        <TabsContent value="sent">
+        <TabsContent value="sent" className="mt-4">
           {renderRequestList(sentRequests, 'sent')}
         </TabsContent>
       </Tabs>
     </div>
   );
 }
-
-    
