@@ -1,51 +1,90 @@
 
+"use client";
+
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-// import { notFound } from 'next/navigation'; // Keep if using Next.js notFound
+import { useParams } from 'next/navigation';
+
 import { ItemCard } from '@/components/items/ItemCard';
 import type { RentalItem, UserProfile } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { UserCircle, PackageOpen, ArrowLeft, MessageSquare } from 'lucide-react';
+import { UserCircle, PackageOpen, ArrowLeft, MessageSquare, Loader2 } from 'lucide-react';
 import { getAllItems } from '@/lib/item-storage';
-import { getAllMockUsers } from '@/lib/auth'; // Changed import
+import { getAllMockUsers } from '@/lib/auth';
 
-// This page remains a server component
-
-async function getUserData(userId: string) {
-  // Simulate fetching user profile
-  const users = getAllMockUsers(); // Call the function
-  const user = users.find(u => u.id === userId);
-  if (!user) return null;
-
-  // Fetch all items and then filter
-  const allItems = await getAllItems();
-  const items = allItems.filter(item => item.owner.id === userId && item.availabilityStatus === 'Available');
-  return { user, items };
+interface UserPageData {
+  user: UserProfile;
+  items: RentalItem[];
 }
 
-export default async function UserProfilePage({ params }: { params: { userId:string } }) {
-  const userData = await getUserData(params.userId);
+export default function UserProfilePage() {
+  const params = useParams();
+  const userId = params.userId as string;
 
-  if (!userData || !userData.user) {
+  const [data, setData] = useState<UserPageData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (userId) {
+      const fetchUserData = async () => {
+        setIsLoading(true);
+        try {
+          // Both functions now safely use localStorage on the client
+          const allUsers = getAllMockUsers();
+          const user = allUsers.find(u => u.id === userId);
+
+          if (!user) {
+            setError("User not found.");
+            setData(null);
+            return;
+          }
+
+          const allItems = await getAllItems();
+          const userItems = allItems.filter(item => item.owner.id === userId && item.availabilityStatus === 'Available');
+
+          setData({ user, items: userItems });
+        } catch (e) {
+          console.error("Failed to fetch user data:", e);
+          setError("An error occurred while loading the profile.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchUserData();
+    }
+  }, [userId]);
+
+  if (isLoading) {
     return (
-        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
-            <Alert variant="destructive" className="max-w-md">
-                <UserCircle className="h-4 w-4" />
-                <AlertTitle>User Not Found</AlertTitle>
-                <AlertDescription>
-                The user profile you are looking for does not exist.
-                </AlertDescription>
-            </Alert>
-            <Button asChild variant="outline" className="mt-6">
-              <Link href="/"><ArrowLeft className="mr-2 h-4 w-4" />Back to Home</Link>
-            </Button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="ml-4 text-lg text-muted-foreground">Loading user profile...</p>
+      </div>
     );
   }
 
-  const { user, items } = userData;
+  if (error || !data) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
+        <Alert variant="destructive" className="max-w-md">
+          <UserCircle className="h-4 w-4" />
+          <AlertTitle>{error === "User not found." ? "User Not Found" : "Error"}</AlertTitle>
+          <AlertDescription>
+            {error || "The user profile you are looking for does not exist."}
+          </AlertDescription>
+        </Alert>
+        <Button asChild variant="outline" className="mt-6">
+          <Link href="/"><ArrowLeft className="mr-2 h-4 w-4" />Back to Home</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const { user, items } = data;
 
   return (
     <div className="space-y-8">
@@ -62,8 +101,7 @@ export default async function UserProfilePage({ params }: { params: { userId:str
             />
             <div>
               <CardTitle className="text-3xl font-headline text-primary mb-1">{user.name.split('(')[0].trim()}</CardTitle>
-              <p className="text-muted-foreground">Member since {new Date().getFullYear() - Math.floor(Math.random() * 3 + 1)}</p> 
-              {/* <p className="text-muted-foreground">{user.location || "Location not specified"}</p> */}
+              <p className="text-muted-foreground">Member since {new Date().getFullYear() - Math.floor(Math.random() * 3 + 1)}</p>
             </div>
             <Button asChild variant="outline" className="mt-4 sm:mt-0 sm:ml-auto">
               <Link href={`/messages?with=${user.id}`}><MessageSquare className="mr-2 h-4 w-4" />Contact {user.name.split(' ')[0]}</Link>
