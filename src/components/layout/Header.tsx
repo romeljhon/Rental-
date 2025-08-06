@@ -81,12 +81,12 @@ export function Header() {
         <Button
           variant={isActive ? 'secondary' : 'ghost'}
           className={cn(
-            'flex items-center gap-2 justify-start w-full sm:w-auto text-base sm:text-sm',
+            'flex items-center gap-2 justify-start w-full lg:w-auto text-base lg:text-sm',
             isActive ? 'text-primary-foreground bg-primary hover:bg-primary/90' : 'text-foreground hover:bg-accent/10'
           )}
           onClick={() => setIsMobileMenuOpen(false)}
         >
-          {Icon && <Icon className="h-5 w-5 sm:h-4 sm:w-4" />}
+          {Icon && <Icon className="h-5 w-5 lg:h-4 lg:w-4" />}
           {label}
         </Button>
       </Link>
@@ -235,13 +235,13 @@ export function Header() {
         </Link>
 
         {/* Desktop Navigation & Controls */}
-        <nav className="hidden sm:flex items-center gap-1">
+        <nav className="hidden lg:flex items-center gap-1">
           {navItems.map((item) => (
             <NavLink key={item.href} {...item} />
           ))}
         </nav>
         
-        <div className="hidden sm:flex items-center gap-1 ml-auto">
+        <div className="hidden lg:flex items-center gap-1 ml-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="text-foreground hover:bg-accent/10">
@@ -285,7 +285,7 @@ export function Header() {
         </div>
 
         {/* Mobile Controls & Menu Setup */}
-        <div className="sm:hidden flex items-center gap-1 ml-auto">
+        <div className="lg:hidden flex items-center gap-1 ml-auto">
           <NotificationBellDropdown />
           <ThemeToggleButton />
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -358,4 +358,3 @@ export function Header() {
     </header>
   );
 }
-
