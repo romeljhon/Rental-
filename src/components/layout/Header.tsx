@@ -161,7 +161,7 @@ export function Header() {
           <Button 
             variant={notificationFilter === 'all' ? 'secondary' : 'ghost'} 
             size="sm" 
-            onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+            onPointerDown={(e) => { e.stopPropagation(); }}
             onClick={(e) => { e.stopPropagation(); setNotificationFilter('all');}} 
             className="flex-1 text-xs h-7"
           >
@@ -170,7 +170,7 @@ export function Header() {
           <Button 
             variant={notificationFilter === 'unread' ? 'secondary' : 'ghost'} 
             size="sm" 
-            onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+            onPointerDown={(e) => { e.stopPropagation(); }}
             onClick={(e) => { e.stopPropagation(); setNotificationFilter('unread');}} 
             className="flex-1 text-xs h-7"
           >
@@ -179,7 +179,7 @@ export function Header() {
           <Button 
             variant={notificationFilter === 'read' ? 'secondary' : 'ghost'} 
             size="sm" 
-            onPointerDown={(e) => { e.stopPropagation(); e.preventDefault(); }}
+            onPointerDown={(e) => { e.stopPropagation(); }}
             onClick={(e) => { e.stopPropagation(); setNotificationFilter('read');}} 
             className="flex-1 text-xs h-7"
           >
