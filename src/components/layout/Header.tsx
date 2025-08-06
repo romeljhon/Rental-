@@ -82,7 +82,7 @@ export function Header() {
           variant={isActive ? 'secondary' : 'ghost'}
           className={cn(
             'flex items-center gap-2 justify-start w-full lg:w-auto text-base lg:text-sm',
-            isActive ? 'text-primary-foreground bg-primary hover:bg-primary/90' : 'text-foreground hover:bg-accent/10'
+            isActive ? 'text-primary-foreground bg-primary hover:bg-primary/90' : 'text-foreground hover:bg-accent hover:text-accent-foreground'
           )}
           onClick={() => setIsMobileMenuOpen(false)}
         >
