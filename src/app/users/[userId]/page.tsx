@@ -32,8 +32,8 @@ export default function UserProfilePage() {
     if (userId) {
       const fetchUserData = async () => {
         setIsLoading(true);
+        setError(null);
         try {
-          // Both functions now safely use localStorage on the client
           const allUsers = getAllMockUsers();
           const user = allUsers.find(u => u.id === userId);
 
@@ -55,6 +55,8 @@ export default function UserProfilePage() {
         }
       };
       fetchUserData();
+    } else {
+      setIsLoading(false);
     }
   }, [userId]);
 
