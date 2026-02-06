@@ -6,6 +6,7 @@ export interface NavItem {
   label: string;
   icon?: LucideIcon;
   exact?: boolean;
+  protected?: boolean;
 }
 
 export interface UserProfile {
@@ -16,7 +17,7 @@ export interface UserProfile {
 }
 
 export interface RentalItem {
-  id:string;
+  id: string;
   name: string;
   description: string;
   category: string; // Could be an enum or a string referencing RentalCategory.name
@@ -31,6 +32,7 @@ export interface RentalItem {
   reviewsCount?: number;
   features?: string[]; // e.g., ["WiFi", "Parking", "Pet-friendly"]
   deliveryMethod?: 'Pick Up' | 'Delivery' | 'Both';
+  createdAt?: Date;
   // Could add specific fields based on category, e.g., mileage for cars
 }
 
@@ -74,8 +76,8 @@ export interface Conversation {
   itemContext?: Pick<RentalItem, 'id' | 'name'>; // Optional: if message is about specific item
 }
 
-export type NotificationEventType = 
-  | 'new_request' 
+export type NotificationEventType =
+  | 'new_request'
   | 'request_update' // Generic for approved, rejected, cancelled
   | 'new_message'
   | 'item_receipt_confirmed';

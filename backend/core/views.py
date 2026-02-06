@@ -1,11 +1,40 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, generics, permissions, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate
 from .models import Item, Category, RentalRequest, Notification, Conversation, Message
 from .serializers import (
     ItemSerializer, CategorySerializer, RentalRequestSerializer,
-    NotificationSerializer, ConversationSerializer, MessageSerializer
+    NotificationSerializer, ConversationSerializer, MessageSerializer,
+    UserSerializer, RegisterSerializer
 )
+
+class RegisterAPI(generics.GenericAPIView):
+    serializer_class = RegisterSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({
+            "user": UserSerializer(user, context=self.get_serializer_context()).data,
+            "token": token.key
+        })
+
+class LoginAPI(generics.GenericAPIView):
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = authenticate(username=username, password=password)
+        if user:
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({
+                "user": UserSerializer(user).data,
+                "token": token.key
+            })
+        return Response({"error": "Invalid Credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['GET'])
 def health_check(request):

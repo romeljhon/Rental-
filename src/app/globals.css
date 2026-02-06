@@ -4,8 +4,10 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%; /* Off-white */
-    --foreground: 224 71% 4%; /* Dark Navy */
+    --background: 0 0% 98%;
+    /* Off-white */
+    --foreground: 224 71% 4%;
+    /* Dark Navy */
 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
@@ -19,14 +21,17 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
 
-    --primary: 221.2 83.2% 53.3%; /* Strong Blue */
+    --primary: 221.2 83.2% 53.3%;
+    /* Strong Blue */
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --accent: 14 72% 62%; /* Soft Orange */
-    --accent-foreground: 0 0% 100%;
+    --accent: 221.2 83.2% 96%;
+    /* Very Light Blue for hover bg */
+    --accent-foreground: 221.2 83.2% 43.3%;
+    /* Darker Blue for hover text */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -36,15 +41,15 @@
     --radius: 0.75rem;
 
     /* Sidebar specific colors - adjusted to match the theme */
-    --sidebar-background: 220 10% 95%; 
+    --sidebar-background: 220 10% 95%;
     --sidebar-foreground: 224 71% 10%;
     --sidebar-primary: 221.2 83.2% 53.3%;
     --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 221.2 83.2% 90%; 
+    --sidebar-accent: 221.2 83.2% 90%;
     --sidebar-accent-foreground: 224 71% 4%;
     --sidebar-border: 220 15% 88%;
     --sidebar-ring: 221.2 83.2% 53.3%;
-    
+
     --chart-1: 221 83% 53%;
     --chart-2: 166 77% 40%;
     --chart-3: 14 72% 62%;
@@ -74,14 +79,15 @@
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
 
-    --accent: 14 72% 72%; /* Lighter Soft Orange for dark mode */
-    --accent-foreground: 224 71% 4%;
+    --accent: 221.2 83.2% 15%;
+    /* Dark Blue for dark mode hover */
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
     --ring: 215 20.2% 65.1%;
-    
+
     --sidebar-background: 222.2 80% 6.9%;
     --sidebar-foreground: 210 40% 95%;
     --sidebar-primary: 210 40% 98%;
@@ -97,20 +103,47 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
 }
 
 /* Add subtle transitions for general elements */
-a, button {
+a,
+button {
   @apply transition-colors duration-200 ease-in-out;
 }
 
 /* Modern Card Styling */
 .card {
-    @apply shadow-md rounded-xl;
+  @apply shadow-md rounded-xl;
 }
+
 .card:hover {
-    @apply shadow-lg;
+  @apply shadow-lg;
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Hero Backgrounds */
+.hero-gradient {
+  background: radial-gradient(circle at 50% -20%, hsl(var(--primary) / 0.15), transparent 70%);
+}
+
+.hero-mesh {
+  background-image:
+    radial-gradient(at 0% 0%, hsla(222, 100%, 50%, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(14, 100%, 50%, 0.1) 0px, transparent 50%);
 }

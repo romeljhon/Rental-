@@ -17,10 +17,21 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
         return cache[cacheKey].data;
     }
 
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+    };
+
+    if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('rentaleaseToken');
+        if (token) {
+            headers['Authorization'] = `Token ${token}`;
+        }
+    }
+
     const response = await fetch(`${API_URL}${endpoint}`, {
         ...options,
         headers: {
-            'Content-Type': 'application/json',
+            ...headers,
             ...options.headers,
         },
     });

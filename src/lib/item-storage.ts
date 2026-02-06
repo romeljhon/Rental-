@@ -22,7 +22,8 @@ function mapBackendToFrontend(item: any): RentalItem {
     reviewsCount: item.reviews_count || 0,
     availableFromDate: new Date(),
     features: [],
-    deliveryMethod: item.delivery_method || 'Both'
+    deliveryMethod: item.delivery_method || 'Both',
+    createdAt: item.created_at ? new Date(item.created_at) : new Date()
   };
 }
 
