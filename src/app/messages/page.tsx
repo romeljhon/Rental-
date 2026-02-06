@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ConversationListItem } from '@/components/messages/ConversationListItem';
 import { MessageBubble } from '@/components/messages/MessageBubble';
@@ -28,46 +28,46 @@ const CONVERSATIONS_STORAGE_KEY = 'rentaleaseConversations';
 const MESSAGES_STORAGE_KEY = 'rentaleaseMessages';
 
 const getInitialMockConversations = (loggedInUserId: string): Conversation[] => [
-  { 
-    id: 'conv1', 
-    participants: [MOCK_USER_JOHN, mockUsersForChat.find(u => u.id === 'user456')!], 
+  {
+    id: 'conv1',
+    participants: [MOCK_USER_JOHN, mockUsersForChat.find(u => u.id === 'user456')!],
     lastMessage: { id: 'msg1', conversationId: 'conv1', senderId: 'user456', text: 'Hey, is the camera still available for next weekend?', timestamp: new Date(Date.now() - 1000 * 60 * 5), isRead: loggedInUserId === MOCK_USER_JOHN.id ? false : loggedInUserId === 'user456' ? true : false },
     unreadCount: loggedInUserId === MOCK_USER_JOHN.id ? 1 : 0,
     itemContext: ITEM_CONTEXT_CAMERA
   },
-  { 
-    id: 'conv2', 
-    participants: [MOCK_USER_ALICE, mockUsersForChat.find(u => u.id === 'user789')!], 
+  {
+    id: 'conv2',
+    participants: [MOCK_USER_ALICE, mockUsersForChat.find(u => u.id === 'user789')!],
     lastMessage: { id: 'msg2', conversationId: 'conv2', senderId: MOCK_USER_ALICE.id, text: 'Sure, I can drop it off on Friday evening.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), isRead: true },
     itemContext: ITEM_CONTEXT_BIKE
   },
-   { 
-    id: 'conv3', 
-    participants: [MOCK_USER_JOHN, MOCK_USER_ALICE], 
+  {
+    id: 'conv3',
+    participants: [MOCK_USER_JOHN, MOCK_USER_ALICE],
     lastMessage: { id: 'msg3', conversationId: 'conv3', senderId: MOCK_USER_ALICE.id, text: 'Hi John, about the jacket...', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 1), isRead: loggedInUserId === MOCK_USER_JOHN.id ? false : loggedInUserId === MOCK_USER_ALICE.id ? true : false },
     unreadCount: loggedInUserId === MOCK_USER_JOHN.id ? 1 : 0,
     itemContext: ITEM_CONTEXT_JACKET
   },
-  { 
+  {
     id: 'conv4',
-    participants: [MOCK_USER_JOHN, mockUsersForChat.find(u => u.id === 'user456')!], 
+    participants: [MOCK_USER_JOHN, mockUsersForChat.find(u => u.id === 'user456')!],
     lastMessage: { id: 'msg4', conversationId: 'conv4', senderId: MOCK_USER_JOHN.id, text: 'Just a general question.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), isRead: true },
   },
 ];
 
 const initialMockMessages: Record<string, MessageType[]> = {
-  conv1: [ 
+  conv1: [
     { id: 'msgA', conversationId: 'conv1', senderId: 'user456', text: 'Hi John!', timestamp: new Date(Date.now() - 1000 * 60 * 10) },
     { id: 'msgB', conversationId: 'conv1', senderId: MOCK_USER_JOHN.id, text: 'Hey Bob! What\'s up?', timestamp: new Date(Date.now() - 1000 * 60 * 8) },
     { id: 'msg1', conversationId: 'conv1', senderId: 'user456', text: 'Hey, is the camera still available for next weekend?', timestamp: new Date(Date.now() - 1000 * 60 * 5) },
   ],
-  conv2: [ 
+  conv2: [
     { id: 'msgC', conversationId: 'conv2', senderId: 'user789', text: 'Regarding the bike rental...', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3) },
     { id: 'msg2', conversationId: 'conv2', senderId: MOCK_USER_ALICE.id, text: 'Sure, I can drop it off on Friday evening.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2) },
   ],
-  conv3: [ 
-    { id: 'msgD', conversationId: 'conv3', senderId: MOCK_USER_ALICE.id, text: 'Hi John, about the jacket...', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 1)},
-    { id: 'msgE', conversationId: 'conv3', senderId: MOCK_USER_JOHN.id, text: 'Hey Alice, what about it?', timestamp: new Date(Date.now() - 1000 * 60 * 58)},
+  conv3: [
+    { id: 'msgD', conversationId: 'conv3', senderId: MOCK_USER_ALICE.id, text: 'Hi John, about the jacket...', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 1) },
+    { id: 'msgE', conversationId: 'conv3', senderId: MOCK_USER_JOHN.id, text: 'Hey Alice, what about it?', timestamp: new Date(Date.now() - 1000 * 60 * 58) },
   ],
   conv4: [
     { id: 'msgF', conversationId: 'conv4', senderId: MOCK_USER_JOHN.id, text: 'Just a general question.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24) },
@@ -86,7 +86,7 @@ const parseStoredConversations = (jsonString: string | null, loggedInUserId: str
         timestamp: new Date(conv.lastMessage.timestamp)
       } : undefined,
       // Recalculate unreadCount based on current user or keep as is if stored
-      unreadCount: conv.lastMessage && conv.lastMessage.senderId !== loggedInUserId && !conv.lastMessage.isRead ? 1 : 0, 
+      unreadCount: conv.lastMessage && conv.lastMessage.senderId !== loggedInUserId && !conv.lastMessage.isRead ? 1 : 0,
     }));
   } catch (error) {
     console.error("Error parsing conversations from localStorage:", error);
@@ -113,109 +113,98 @@ const parseStoredMessages = (jsonString: string | null): Record<string, MessageT
 };
 
 
+import { getConversations, getMessages, sendMessage, createConversation, markMessageAsRead } from '@/lib/message-storage';
+
 function MessagesPageContent() {
   const searchParams = useSearchParams();
   const { addNotification } = useNotifications();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [allMessages, setAllMessages] = useState<Record<string, MessageType[]>>({});
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<MessageType[]>([]); // Messages for the selected conversation
+  const [messages, setMessages] = useState<MessageType[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
   const otherParticipant = selectedConversation?.participants.find(p => p.id !== currentUserId);
 
-  // Load active user on mount
+  const fetchConversations = useCallback(async (userId: string) => {
+    setIsLoading(true);
+    const data = await getConversations(userId);
+    setConversations(data);
+
+    // Check URL params for pre-selection
+    const targetUserIdFromUrl = searchParams.get('with');
+    const targetItemId = searchParams.get('contextItemId');
+    const targetConvId = searchParams.get('convId');
+
+    let preSelectedConvId: string | null = null;
+
+    if (targetConvId) {
+      preSelectedConvId = targetConvId;
+    } else if (targetUserIdFromUrl) {
+      const existing = data.find(c =>
+        c.participants.some(p => p.id === targetUserIdFromUrl) &&
+        (!targetItemId || c.itemContext?.id === targetItemId)
+      );
+      if (existing) {
+        preSelectedConvId = existing.id;
+      } else {
+        // Create new conversation if it doesn't exist
+        const newConv = await createConversation([userId, targetUserIdFromUrl], targetItemId || undefined);
+        if (newConv) {
+          setConversations(prev => [newConv, ...prev]);
+          preSelectedConvId = newConv.id;
+        }
+      }
+    }
+
+    if (preSelectedConvId) {
+      setSelectedConversationId(preSelectedConvId);
+    } else if (data.length > 0 && !selectedConversationId) {
+      setSelectedConversationId(data[0].id);
+    }
+    setIsLoading(false);
+  }, [searchParams, selectedConversationId]);
+
   useEffect(() => {
     const activeId = getActiveUserId();
     const activeProfile = getActiveUserProfile();
     setCurrentUserId(activeId);
     setCurrentUserProfile(activeProfile);
-  }, []);
+    if (activeId) {
+      fetchConversations(activeId);
+    }
+  }, [fetchConversations]);
 
-  // Load conversations and messages from localStorage or defaults
-  useEffect(() => {
-    if (currentUserId) {
-      setIsLoading(true);
-      if (typeof window !== 'undefined') {
-        const storedConvsJson = localStorage.getItem(CONVERSATIONS_STORAGE_KEY);
-        const loadedConversations = parseStoredConversations(storedConvsJson, currentUserId);
-        
-        const userConversations = loadedConversations
-          .filter(conv => conv.participants.some(p => p.id === currentUserId))
-          .sort((a,b) => (b.lastMessage?.timestamp.getTime() || 0) - (a.lastMessage?.timestamp.getTime() || 0));
-        setConversations(userConversations);
+  const fetchMessages = useCallback(async () => {
+    if (selectedConversationId) {
+      const data = await getMessages(selectedConversationId);
+      setMessages(data);
 
-        const storedMsgsJson = localStorage.getItem(MESSAGES_STORAGE_KEY);
-        const loadedMessages = parseStoredMessages(storedMsgsJson);
-        setAllMessages(loadedMessages);
-        
-        const targetUserIdFromUrl = searchParams.get('with');
-        const targetItemId = searchParams.get('contextItemId');
-        const targetConvId = searchParams.get('convId');
-        let preSelectedConvId: string | null = null;
-
-        if (targetConvId) {
-          const convExists = userConversations.find(c => c.id === targetConvId);
-          if (convExists) preSelectedConvId = targetConvId;
-        } else if (targetUserIdFromUrl) {
-          const potentialConvs = userConversations.filter(conv => 
-            conv.participants.some(p => p.id === targetUserIdFromUrl)
-          );
-          if (targetItemId) {
-            const itemSpecificConv = potentialConvs.find(conv => conv.itemContext?.id === targetItemId);
-            if (itemSpecificConv) {
-              preSelectedConvId = itemSpecificConv.id;
-            }
-          }
-          if (!preSelectedConvId && potentialConvs.length > 0) {
-             preSelectedConvId = potentialConvs[0].id; 
-          }
-        }
-
-        if (preSelectedConvId) {
-          setSelectedConversationId(preSelectedConvId);
-        } else if (userConversations.length > 0) {
-          setSelectedConversationId(userConversations[0].id);
-        } else {
-          setSelectedConversationId(null);
-        }
+      // Mark unread messages as read
+      const unread = data.filter(m => m.senderId !== currentUserId && !m.isRead);
+      for (const m of unread) {
+        await markMessageAsRead(m.id);
       }
-      setIsLoading(false);
+      if (unread.length > 0) {
+        // Refresh local unread counts
+        setConversations(prev => prev.map(c =>
+          c.id === selectedConversationId ? { ...c, unreadCount: 0 } : c
+        ));
+      }
     }
-  }, [currentUserId, searchParams]);
+  }, [selectedConversationId, currentUserId]);
 
-  // Update localStorage when conversations change
   useEffect(() => {
-    if (typeof window !== 'undefined' && conversations.length > 0 && !isLoading) { // isLoading check to avoid overwriting on initial empty state
-      localStorage.setItem(CONVERSATIONS_STORAGE_KEY, JSON.stringify(conversations));
-    }
-  }, [conversations, isLoading]);
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 5000); // Poll messages every 5s
+    return () => clearInterval(interval);
+  }, [fetchMessages]);
 
-  // Update localStorage when allMessages change
-  useEffect(() => {
-    if (typeof window !== 'undefined' && Object.keys(allMessages).length > 0 && !isLoading) {
-      localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(allMessages));
-    }
-  }, [allMessages, isLoading]);
-  
-  // Set messages for selected conversation and mark as read
-  useEffect(() => {
-    if (selectedConversationId && Object.keys(allMessages).length > 0) {
-      setMessages(allMessages[selectedConversationId] || []);
-      setConversations(prev => prev.map(c => 
-          c.id === selectedConversationId ? {...c, unreadCount: 0, lastMessage: c.lastMessage ? {...c.lastMessage, isRead: true} : undefined } : c
-      ));
-    } else {
-      setMessages([]);
-    }
-  }, [selectedConversationId, allMessages]);
-  
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -224,49 +213,28 @@ function MessagesPageContent() {
     setSelectedConversationId(conversationId);
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedConversationId || !currentUserId || !currentUserProfile || !otherParticipant) return;
 
     setIsSending(true);
-    const newMsg: MessageType = {
-      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      conversationId: selectedConversationId,
-      senderId: currentUserId,
-      text: newMessage.trim(),
-      timestamp: new Date(),
-      isRead: true, // Sender has read it
-    };
+    const sent = await sendMessage(selectedConversationId, currentUserId, newMessage.trim());
 
-    setTimeout(() => {
-      // Update messages for the current view
-      setMessages(prev => [...prev, newMsg]);
-      
-      // Update allMessages state
-      setAllMessages(prevAll => {
-        const updatedConvMessages = [...(prevAll[selectedConversationId] || []), newMsg];
-        return { ...prevAll, [selectedConversationId]: updatedConvMessages };
-      });
-      
-      // Update conversations state
-      setConversations(prevConvs => prevConvs.map(c => 
-        c.id === selectedConversationId ? {...c, lastMessage: newMsg, unreadCount: 0 } : c // Reset unread for self
-      ).sort((a,b) => (b.lastMessage?.timestamp.getTime() || 0) - (a.lastMessage?.timestamp.getTime() || 0))
-      );
-      
+    if (sent) {
+      setMessages(prev => [...prev, sent]);
+      setNewMessage('');
+
       addNotification({
         targetUserId: otherParticipant.id,
         eventType: 'new_message',
         title: `New message from ${currentUserProfile.name}`,
         message: newMessage.trim(),
         link: `/messages?convId=${selectedConversationId}`,
-        relatedUser: {id: currentUserProfile.id, name: currentUserProfile.name},
+        relatedUser: { id: currentUserProfile.id, name: currentUserProfile.name },
         relatedItemId: selectedConversation?.itemContext?.id
       });
-      
-      setNewMessage('');
-      setIsSending(false);
-    }, 300); // Simulate network delay
+    }
+    setIsSending(false);
   };
 
   if (isLoading || !currentUserId || !currentUserProfile) {
@@ -322,16 +290,16 @@ function MessagesPageContent() {
               />
               <div>
                 <h3 className="font-semibold text-foreground">{otherParticipant.name}</h3>
-                {selectedConversation.itemContext && 
+                {selectedConversation.itemContext &&
                   <p className="text-xs text-muted-foreground">Regarding: {selectedConversation.itemContext.name}</p>
                 }
               </div>
             </div>
             <ScrollArea className="flex-grow p-4 space-y-4">
               {messages.map(msg => (
-                <MessageBubble 
-                  key={msg.id} 
-                  message={msg} 
+                <MessageBubble
+                  key={msg.id}
+                  message={msg}
                   isSender={msg.senderId === currentUserId}
                   senderProfile={msg.senderId === currentUserId ? currentUserProfile : mockUsersForChat.find(u => u.id === msg.senderId)}
                 />

@@ -43,3 +43,12 @@ next-env.d.ts
 # firebase
 firebase-debug.log
 firestore-debug.log
+
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+backend/.venv/
+backend/db.sqlite3
+backend/media/
+backend/static_root/

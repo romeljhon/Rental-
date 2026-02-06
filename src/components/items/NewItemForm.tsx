@@ -31,7 +31,7 @@ const categories: RentalCategory[] = [
 
 const deliveryMethods = [
   { id: 'pick-up', value: 'Pick Up', label: 'Pick Up Only', icon: Package },
-  { id: 'delivery', value: 'Delivery Only', label: 'Delivery Only', icon: Truck },
+  { id: 'delivery', value: 'Delivery', label: 'Delivery Only', icon: Truck },
   { id: 'both', value: 'Both', label: 'Pick Up & Delivery', icon: ListChecks },
 ] as const;
 
@@ -149,9 +149,9 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
     setIsSubmitting(true);
     const activeUser = getActiveUserProfile();
     if (!activeUser) {
-        toast({ title: 'Error', description: 'Could not identify active user. Please try again.', variant: 'destructive'});
-        setIsSubmitting(false);
-        return;
+      toast({ title: 'Error', description: 'Could not identify active user. Please try again.', variant: 'destructive' });
+      setIsSubmitting(false);
+      return;
     }
 
     const itemCategoryName = categories.find(c => c.id === data.category)?.name || 'Other';
@@ -195,14 +195,14 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
         setImagePreviews([]);
       }
     } catch (error) {
-        console.error("Error submitting item:", error);
-        toast({
-            title: 'Submission Error',
-            description: `Failed to ${isEditMode ? 'update' : 'list'} item. ` + (error instanceof Error ? error.message : String(error)),
-            variant: 'destructive',
-        });
+      console.error("Error submitting item:", error);
+      toast({
+        title: 'Submission Error',
+        description: `Failed to ${isEditMode ? 'update' : 'list'} item. ` + (error instanceof Error ? error.message : String(error)),
+        variant: 'destructive',
+      });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -298,7 +298,7 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="aiDetails">Specific Details for AI</Label>
-                  <Textarea id="aiDetails" {...form.register('aiDetails')} placeholder="e.g., Barely used, comes with original packaging and all accessories." rows={3} disabled={isGenerating || isSubmitting}/>
+                  <Textarea id="aiDetails" {...form.register('aiDetails')} placeholder="e.g., Barely used, comes with original packaging and all accessories." rows={3} disabled={isGenerating || isSubmitting} />
                 </div>
                 <Button type="button" onClick={onAIDescriptionGenerate} disabled={isGenerating || isSubmitting} variant="outline" className="w-full sm:w-auto">
                   {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
@@ -310,18 +310,18 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea id="description" {...form.register('description')} placeholder="Describe your item in detail..." rows={5} disabled={isSubmitting}/>
+            <Textarea id="description" {...form.register('description')} placeholder="Describe your item in detail..." rows={5} disabled={isSubmitting} />
             {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="features">Features (comma-separated)</Label>
-            <Input id="features" {...form.register('features')} placeholder="e.g., 24MP Sensor, 4K Video, Carry Bag" disabled={isSubmitting}/>
+            <Input id="features" {...form.register('features')} placeholder="e.g., 24MP Sensor, 4K Video, Carry Bag" disabled={isSubmitting} />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="pricePerDay">Price Per Day (₱)</Label>
-            <Input id="pricePerDay" type="number" step="0.01" {...form.register('pricePerDay')} placeholder="e.g., 1000.00" disabled={isSubmitting}/>
+            <Input id="pricePerDay" type="number" step="0.01" {...form.register('pricePerDay')} placeholder="e.g., 1000.00" disabled={isSubmitting} />
             {errors.pricePerDay && <p className="text-sm text-destructive">{errors.pricePerDay.message}</p>}
           </div>
 
@@ -360,25 +360,25 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
           <div className="space-y-2">
             <Label htmlFor="images">Upload Images (Max 5, first is primary)</Label>
             <div className="flex items-center justify-center w-full">
-                <label htmlFor="images-upload" className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg bg-card hover:bg-muted transition-colors ${isSubmitting || imagePreviews.length >= 5 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
-                        <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                        <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB. Max {Math.max(0, 5 - imagePreviews.length)} more.</p>
-                    </div>
-                    <Input
-                      id="images-upload"
-                      type="file"
-                      className="hidden"
-                      multiple
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={isSubmitting || imagePreviews.length >= 5}
-                    />
-                </label>
+              <label htmlFor="images-upload" className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg bg-card hover:bg-muted transition-colors ${isSubmitting || imagePreviews.length >= 5 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+                  <p className="mb-1 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                  <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB. Max {Math.max(0, 5 - imagePreviews.length)} more.</p>
+                </div>
+                <Input
+                  id="images-upload"
+                  type="file"
+                  className="hidden"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={isSubmitting || imagePreviews.length >= 5}
+                />
+              </label>
             </div>
             {imagePreviews.length > 0 && (
-              <div className="mt-2 grid grid-cols-3 sm:grid-cols-5 gap-2">
+              <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                 {imagePreviews.map((src, index) => (
                   <div key={index} className="relative aspect-square rounded-md overflow-hidden border group">
                     <img src={src} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />

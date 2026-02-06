@@ -10,37 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getActiveUserId, getActiveUserProfile, MOCK_USER_JOHN, MOCK_USER_ALICE } from '@/lib/auth';
 import { useNotifications } from '@/contexts/NotificationContext';
 
-const otherUserProfile: UserProfile = { id: 'user456', name: 'Bob The Builder', avatarUrl: 'https://placehold.co/100x100.png' };
-
-const initialMockRequests: RentalRequest[] = [
-  { id: 'req1', itemId: 'item_rented_by_john', item: {id: 'item_rented_by_john', name: 'Yoga Mat', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 10}, requester: MOCK_USER_JOHN, owner: MOCK_USER_ALICE, startDate: new Date('2024-08-01'), endDate: new Date('2024-08-05'), status: 'Approved', totalPrice: 50, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 24) },
-  { id: 'req2', itemId: 'item_owned_by_john', item: {id: 'item_owned_by_john', name: 'DSLR Camera', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 50}, requester: MOCK_USER_ALICE, owner: MOCK_USER_JOHN, startDate: new Date('2024-08-10'), endDate: new Date('2024-08-12'), status: 'Approved', totalPrice: 150, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 48) },
-  { id: 'req3', itemId: 'item_rented_by_alice_completed', item: {id: 'item_rented_by_alice_completed', name: 'Mountain Bike', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 35}, requester: MOCK_USER_ALICE, owner: MOCK_USER_JOHN, startDate: new Date('2024-07-20'), endDate: new Date('2024-07-22'), status: 'Completed', totalPrice: 105, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10) },
-  { id: 'req4', itemId: 'item_owned_by_alice', item: {id: 'item_owned_by_alice', name: 'Ukulele', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 12}, requester: MOCK_USER_JOHN, owner: MOCK_USER_ALICE, startDate: new Date('2024-08-15'), endDate: new Date('2024-08-18'), status: 'Pending', totalPrice: 48, requestedAt: new Date(Date.now() - 1000 * 60 * 30) },
-  { id: 'req5', itemId: '5', item: {id: '5', name: 'Downtown Apartment', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 120}, requester: MOCK_USER_JOHN, owner: otherUserProfile, startDate: new Date('2024-09-01'), endDate: new Date('2024-09-07'), status: 'Rejected', totalPrice: 840, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 5) },
-  { id: 'req6', itemId: 'item_owned_by_john_receipt_confirmed', item: {id: 'item_owned_by_john_receipt_confirmed', name: 'Vintage Leather Jacket', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 20}, requester: MOCK_USER_ALICE, owner: MOCK_USER_JOHN, startDate: new Date('2024-08-20'), endDate: new Date('2024-08-22'), status: 'ReceiptConfirmed', totalPrice: 60, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 72) },
-  { id: 'req7_john_completed_rent', itemId: 'item_rented_by_john_for_rating', item: {id: 'item_rented_by_john_for_rating', name: 'Board Game Collection', imageUrl: 'https://placehold.co/100x100.png', pricePerDay: 15}, requester: MOCK_USER_JOHN, owner: MOCK_USER_ALICE, startDate: new Date('2024-07-10'), endDate: new Date('2024-07-15'), status: 'Completed', totalPrice: 75, requestedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15), ratingGiven: undefined },
-];
-
-const REQUESTS_STORAGE_KEY = 'rentaleaseRentalRequests';
-
-// Helper to parse dates from stored JSON
-const parseStoredRequests = (storedRequestsJson: string | null): RentalRequest[] => {
-  if (!storedRequestsJson) return initialMockRequests;
-  try {
-    const parsed = JSON.parse(storedRequestsJson) as RentalRequest[];
-    return parsed.map(req => ({
-      ...req,
-      startDate: new Date(req.startDate),
-      endDate: new Date(req.endDate),
-      requestedAt: new Date(req.requestedAt),
-      ratingGiven: req.ratingGiven, // Ensure ratingGiven is parsed
-    }));
-  } catch (error) {
-    console.error("Error parsing requests from localStorage:", error);
-    return initialMockRequests; // Fallback if parsing fails
-  }
-};
+import { getAllRequests, updateRequestStatus } from '@/lib/request-storage';
 
 export default function RequestsPage() {
   const { toast } = useToast();
@@ -50,85 +20,62 @@ export default function RequestsPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
 
-  // Load active user and requests from localStorage on initial mount or user switch
-  useEffect(() => {
+  const fetchRequests = async () => {
     setIsLoading(true);
+    const loadedRequests = await getAllRequests();
+    setRequests(loadedRequests.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
     const activeId = getActiveUserId();
     const activeProfile = getActiveUserProfile();
     setCurrentUserId(activeId);
     setCurrentUserProfile(activeProfile);
+    fetchRequests();
+  }, []);
 
-    if (typeof window !== 'undefined') {
-      const storedRequestsJson = localStorage.getItem(REQUESTS_STORAGE_KEY);
-      const loadedRequests = parseStoredRequests(storedRequestsJson);
-      setRequests(loadedRequests.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
-    } else {
-      setRequests(initialMockRequests.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
-    }
-    setIsLoading(false);
-  }, []); // Runs once on mount
-
-  // Update localStorage whenever requests state changes
-  useEffect(() => {
-    if (typeof window !== 'undefined' && requests.length > 0 && !isLoading) { // Avoid saving empty initial state or during initial load
-      localStorage.setItem(REQUESTS_STORAGE_KEY, JSON.stringify(requests));
-    }
-  }, [requests, isLoading]);
-  
-  // Re-fetch active user if it changes due to header interaction
   useEffect(() => {
     const handleUserSwitch = () => {
-        const newActiveId = getActiveUserId();
-        if (newActiveId !== currentUserId) {
-            setIsLoading(true);
-            setCurrentUserId(newActiveId);
-            setCurrentUserProfile(getActiveUserProfile());
-            // Reload requests for the new user from localStorage
-            if (typeof window !== 'undefined') {
-                const storedRequestsJson = localStorage.getItem(REQUESTS_STORAGE_KEY);
-                const loadedRequests = parseStoredRequests(storedRequestsJson);
-                setRequests(loadedRequests.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
-            }
-            setIsLoading(false);
-        }
+      const newActiveId = getActiveUserId();
+      if (newActiveId !== currentUserId) {
+        setCurrentUserId(newActiveId);
+        setCurrentUserProfile(getActiveUserProfile());
+        fetchRequests();
+      }
     };
-    
-    // Listen for storage changes as a proxy for user switching if direct event isn't available
-    // Also re-check on focus in case localStorage was changed in another tab
+
     window.addEventListener('storage', handleUserSwitch);
     window.addEventListener('focus', handleUserSwitch);
-    
-    // Initial check if currentUserId prop was already set from SSR and needs processing
-    // This is more for robustness if the first useEffect's conditions weren't perfectly met
-    if (currentUserId && requests.length === 0 && !isLoading) { 
-        // This case might not be strictly necessary if the first useEffect always runs.
-    }
 
     return () => {
-        window.removeEventListener('storage', handleUserSwitch);
-        window.removeEventListener('focus', handleUserSwitch);
+      window.removeEventListener('storage', handleUserSwitch);
+      window.removeEventListener('focus', handleUserSwitch);
     };
-  }, [currentUserId, isLoading, requests.length]); 
-  
+  }, [currentUserId]);
+
   const sentRequests = useMemo(() => {
     if (!currentUserId) return [];
-    return requests.filter(req => req.requester.id === currentUserId).sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime());
+    return requests.filter(req => req.requester.id === currentUserId).sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
   }, [requests, currentUserId]);
 
   const receivedRequests = useMemo(() => {
     if (!currentUserId) return [];
-    return requests.filter(req => req.owner.id === currentUserId).sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime());
+    return requests.filter(req => req.owner.id === currentUserId).sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
   }, [requests, currentUserId]);
 
 
-  const updateRequestStatusById = (requestId: string, newStatus: RentalRequest['status'], rating?: number) => {
+  const updateRequestStatusById = async (requestId: string, newStatus: RentalRequest['status'], rating?: number) => {
     const originalRequest = requests.find(req => req.id === requestId);
     if (!originalRequest || !currentUserProfile) return;
 
+    const updated = await updateRequestStatus(requestId, newStatus, rating);
+    if (!updated) return;
+
     setRequests(prevRequests =>
       prevRequests.map(req =>
-        req.id === requestId ? { ...req, status: newStatus, ratingGiven: rating !== undefined ? rating : req.ratingGiven } : req
-      ).sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime())
+        req.id === requestId ? updated : req
+      ).sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime())
     );
 
     let notifTargetUserId: string | null = null;
@@ -136,40 +83,40 @@ export default function RequestsPage() {
     let notifMessage = '';
 
     if (newStatus === 'Approved') {
-        notifTargetUserId = originalRequest.requester.id;
-        notifTitle = 'Request Approved!';
-        notifMessage = `${originalRequest.owner.name} approved your request for ${originalRequest.item.name}.`;
+      notifTargetUserId = originalRequest.requester.id;
+      notifTitle = 'Request Approved!';
+      notifMessage = `${originalRequest.owner.name} approved your request for ${originalRequest.item.name}.`;
     } else if (newStatus === 'Rejected') {
-        notifTargetUserId = originalRequest.requester.id;
-        notifTitle = 'Request Rejected';
-        notifMessage = `${originalRequest.owner.name} rejected your request for ${originalRequest.item.name}.`;
+      notifTargetUserId = originalRequest.requester.id;
+      notifTitle = 'Request Rejected';
+      notifMessage = `${originalRequest.owner.name} rejected your request for ${originalRequest.item.name}.`;
     } else if (newStatus === 'Cancelled') {
-        notifTargetUserId = originalRequest.requester.id === currentUserId ? originalRequest.owner.id : originalRequest.requester.id;
-        notifTitle = 'Request Cancelled';
-        notifMessage = `The request for ${originalRequest.item.name} has been cancelled by ${currentUserProfile.name}.`;
+      notifTargetUserId = originalRequest.requester.id === currentUserId ? originalRequest.owner.id : originalRequest.requester.id;
+      notifTitle = 'Request Cancelled';
+      notifMessage = `The request for ${originalRequest.item.name} has been cancelled by ${currentUserProfile.name}.`;
     } else if (newStatus === 'ReceiptConfirmed') {
-        notifTargetUserId = originalRequest.owner.id;
-        notifTitle = 'Item Receipt Confirmed';
-        notifMessage = `${originalRequest.requester.name} confirmed receipt of ${originalRequest.item.name}.`;
-    } else if (newStatus === 'Completed' && rating !== undefined) { 
-        // No separate notification for rating submission itself, already covered by toast.
-        // But if rating triggers other flows (e.g., owner notification of new rating), add here.
+      notifTargetUserId = originalRequest.owner.id;
+      notifTitle = 'Item Receipt Confirmed';
+      notifMessage = `${originalRequest.requester.name} confirmed receipt of ${originalRequest.item.name}.`;
+    } else if (newStatus === 'Completed' && rating !== undefined) {
+      // No separate notification for rating submission itself, already covered by toast.
+      // But if rating triggers other flows (e.g., owner notification of new rating), add here.
     }
 
 
     if (notifTargetUserId && notifTitle && notifTargetUserId !== currentUserProfile.id) { // Don't notify self
-        addNotification({
-            targetUserId: notifTargetUserId,
-            eventType: newStatus === 'ReceiptConfirmed' ? 'item_receipt_confirmed' : 'request_update',
-            title: notifTitle,
-            message: notifMessage,
-            link: '/requests',
-            relatedItemId: originalRequest.itemId,
-            relatedUser: {id: currentUserProfile.id, name: currentUserProfile.name}
-        });
+      addNotification({
+        targetUserId: notifTargetUserId,
+        eventType: newStatus === 'ReceiptConfirmed' ? 'item_receipt_confirmed' : 'request_update',
+        title: notifTitle,
+        message: notifMessage,
+        link: '/requests',
+        relatedItemId: originalRequest.itemId,
+        relatedUser: { id: currentUserProfile.id, name: currentUserProfile.name }
+      });
     }
   };
-  
+
   const handleApprove = (requestId: string) => {
     updateRequestStatusById(requestId, 'Approved');
     toast({ title: 'Request Approved', description: 'The rental request has been approved.' });
@@ -179,7 +126,7 @@ export default function RequestsPage() {
     updateRequestStatusById(requestId, 'Rejected');
     toast({ title: 'Request Rejected', description: 'The rental request has been rejected.', variant: 'destructive' });
   };
-  
+
   const handleCancel = (requestId: string) => {
     updateRequestStatusById(requestId, 'Cancelled');
     toast({ title: 'Request Cancelled', description: 'The rental request has been cancelled.' });
@@ -197,10 +144,10 @@ export default function RequestsPage() {
       setRequests(prevRequests =>
         prevRequests.map(req =>
           req.id === requestId ? { ...req, ratingGiven: rating } : req
-        ).sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime())
+        ).sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime())
       );
       toast({ title: 'Rating Submitted!', description: 'Thank you for your feedback.' });
-      
+
       // In a real app, you would also trigger an update to the item's average rating:
       // e.g., updateItemAverageRating(requestToUpdate.itemId, rating);
       // This would involve fetching the item, recalculating its average rating and reviewsCount,
@@ -218,7 +165,7 @@ export default function RequestsPage() {
       </div>
     );
   }
-  
+
   const renderRequestList = (reqs: RentalRequest[], type: 'sent' | 'received') => {
     if (reqs.length === 0) {
       return (
@@ -232,11 +179,11 @@ export default function RequestsPage() {
     return (
       <div className="space-y-4">
         {reqs.map(req => (
-          <RequestCard 
-            key={req.id} 
-            request={req} 
+          <RequestCard
+            key={req.id}
+            request={req}
             type={type}
-            currentViewingUserId={currentUserId} 
+            currentViewingUserId={currentUserId}
             onApprove={type === 'received' && req.status === 'Pending' ? handleApprove : undefined}
             onReject={type === 'received' && req.status === 'Pending' ? handleReject : undefined}
             onCancel={(req.status === 'Pending' || req.status === 'Approved') ? handleCancel : undefined}

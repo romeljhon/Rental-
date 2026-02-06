@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 
 interface RequestCardProps {
   request: RentalRequest;
-  type: 'sent' | 'received'; 
+  type: 'sent' | 'received';
   currentViewingUserId: string | null; // ID of the user currently viewing the page
   onApprove?: (requestId: string) => void;
   onReject?: (requestId: string) => void;
@@ -45,7 +45,7 @@ export function RequestCard({ request, type, currentViewingUserId, onApprove, on
   const StatusIcon = statusIcons[request.status];
   const isOwnerViewing = type === 'received' && currentViewingUserId === request.owner.id;
   const isRequesterViewing = type === 'sent' && currentViewingUserId === request.requester.id;
-  
+
   const [currentRating, setCurrentRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
 
@@ -57,39 +57,41 @@ export function RequestCard({ request, type, currentViewingUserId, onApprove, on
 
   return (
     <Card className="shadow-md hover:shadow-lg transition-shadow duration-200">
-      <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-3">
-        <div className="flex-shrink-0">
+      <CardHeader className="flex flex-col sm:flex-row items-start gap-4 space-y-0 pb-3 relative">
+        <div className="flex-shrink-0 w-full sm:w-auto">
           <Image
             src={request.item.imageUrl || 'https://placehold.co/100x100.png'}
             alt={request.item.name}
             width={80}
             height={80}
-            className="rounded-md object-cover aspect-square"
+            className="rounded-md object-cover aspect-square w-full sm:w-20 sm:h-20 max-h-[160px]"
             data-ai-hint="rental item"
           />
         </div>
-        <div className="flex-grow">
-          <CardTitle className="text-lg font-headline mb-1">{request.item.name}</CardTitle>
+        <div className="flex-grow w-full">
+          <div className="flex justify-between items-start mb-1">
+            <CardTitle className="text-lg font-headline">{request.item.name}</CardTitle>
+            <Badge className={`capitalize text-[10px] sm:text-xs py-1 px-2.5 absolute top-3 right-4 sm:static ${statusColors[request.status]}`}>
+              <StatusIcon className="w-3 h-3 mr-1.5" />
+              {request.status}
+            </Badge>
+          </div>
           <div className="text-sm text-muted-foreground space-y-0.5">
             <p className="flex items-center">
-              <CalendarDays className="w-4 h-4 mr-1.5" />
-              {format(new Date(request.startDate), 'MMM d, yyyy')} - {format(new Date(request.endDate), 'MMM d, yyyy')}
+              <CalendarDays className="w-4 h-4 mr-1.5 shrink-0" />
+              <span className="truncate">{format(new Date(request.startDate), 'MMM d, yyyy')} - {format(new Date(request.endDate), 'MMM d, yyyy')}</span>
             </p>
-            <p>
+            <p className="truncate">
               {type === 'sent' ? `To: ${request.owner.name}` : `From: ${request.requester.name}`}
             </p>
-             <p className="flex items-center font-semibold text-primary">
+            <p className="flex items-center font-semibold text-primary">
               <span className="mr-1">₱</span>
               {request.totalPrice.toFixed(2)}
             </p>
           </div>
         </div>
-        <Badge className={`capitalize text-xs py-1 px-2.5 ${statusColors[request.status]}`}>
-          <StatusIcon className="w-3 h-3 mr-1.5" />
-          {request.status}
-        </Badge>
       </CardHeader>
-      
+
       {isRequesterViewing && request.status === 'Completed' && onRateItem && (
         <CardContent className="pt-2 pb-3 border-t">
           {!request.ratingGiven ? (
@@ -107,9 +109,9 @@ export function RequestCard({ request, type, currentViewingUserId, onApprove, on
                   >
                     <Star
                       className={`w-5 h-5 transition-colors 
-                                 ${(hoverRating || currentRating) >= star 
-                                   ? 'text-yellow-400 fill-yellow-400' 
-                                   : 'text-muted-foreground hover:text-yellow-300'}`}
+                                 ${(hoverRating || currentRating) >= star
+                          ? 'text-yellow-400 fill-yellow-400'
+                          : 'text-muted-foreground hover:text-yellow-300'}`}
                     />
                   </button>
                 ))}
@@ -124,7 +126,7 @@ export function RequestCard({ request, type, currentViewingUserId, onApprove, on
             <p className="text-sm text-foreground">
               You rated: <span className="font-semibold text-primary">{request.ratingGiven}</span> stars
               {[...Array(request.ratingGiven)].map((_, i) => (
-                  <Star key={i} className="inline-block w-4 h-4 ml-0.5 text-yellow-400 fill-yellow-400" />
+                <Star key={i} className="inline-block w-4 h-4 ml-0.5 text-yellow-400 fill-yellow-400" />
               ))}
             </p>
           )}
@@ -143,14 +145,14 @@ export function RequestCard({ request, type, currentViewingUserId, onApprove, on
           </>
         )}
         {isRequesterViewing && request.status === 'Approved' && onConfirmReceipt && (
-           <Button size="sm" onClick={() => onConfirmReceipt(request.id)} className="bg-sky-600 hover:bg-sky-700 text-white">
-             <PackageCheck className="w-4 h-4 mr-1.5" /> Confirm Item Receipt
-           </Button>
+          <Button size="sm" onClick={() => onConfirmReceipt(request.id)} className="bg-sky-600 hover:bg-sky-700 text-white">
+            <PackageCheck className="w-4 h-4 mr-1.5" /> Confirm Item Receipt
+          </Button>
         )}
         {(isRequesterViewing || isOwnerViewing) && (request.status === 'Pending' || request.status === 'Approved') && onCancel && (
-           <Button variant="ghost" size="sm" onClick={() => onCancel(request.id)} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
-             <X className="w-4 h-4 mr-1.5" /> Cancel Request
-           </Button>
+          <Button variant="ghost" size="sm" onClick={() => onCancel(request.id)} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+            <X className="w-4 h-4 mr-1.5" /> Cancel Request
+          </Button>
         )}
       </CardFooter>
     </Card>

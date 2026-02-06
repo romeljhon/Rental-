@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { getActiveUserId, getActiveUserProfile } from '@/lib/auth';
 import { useNotifications } from '@/contexts/NotificationContext'; // Added
+import { createRequest } from '@/lib/request-storage';
 
 interface ItemDetailViewProps {
   item: RentalItem;
@@ -62,10 +63,10 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
     setSelectedRange(range);
   };
 
-  const handleRequestToRent = () => {
+  const handleRequestToRent = async () => {
     if (!activeUser) {
-        toast({ title: 'Error', description: 'Could not identify active user.', variant: 'destructive'});
-        return;
+      toast({ title: 'Error', description: 'Could not identify active user.', variant: 'destructive' });
+      return;
     }
     if (!selectedRange || !selectedRange.from || !selectedRange.to) {
       toast({
@@ -84,29 +85,42 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
       return;
     }
 
-    let requestDetails = `Your request for ${item.name} has been submitted.`;
-    if (chosenDeliveryByRenter) {
-      requestDetails += ` Chosen delivery: ${chosenDeliveryByRenter}.`;
-    }
+    try {
+      const diffTime = Math.abs(selectedRange.to.getTime() - selectedRange.from.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      const totalPrice = diffDays * item.pricePerDay;
 
-    // Add notification for the item owner
-    addNotification({
+      await createRequest({
+        itemId: item.id,
+        requesterName: activeUser.name,
+        ownerName: item.owner.name,
+        startDate: selectedRange.from,
+        endDate: selectedRange.to,
+        status: 'Pending',
+        totalPrice: totalPrice,
+      });
+
+      // Add notification for the item owner
+      addNotification({
         targetUserId: item.owner.id,
         eventType: 'new_request',
         title: 'New Rental Request!',
         message: `${activeUser.name} wants to rent your item: ${item.name}.`,
-        link: `/requests`, // Link to owner's requests page
+        link: `/requests`,
         relatedItemId: item.id,
-        relatedUser: {id: activeUser.id, name: activeUser.name}
-    });
+        relatedUser: { id: activeUser.id, name: activeUser.name }
+      });
 
-    console.log('Rental requested for:', item.name, 'from', selectedRange.from, 'to', selectedRange.to, 'delivery:', chosenDeliveryByRenter || item.deliveryMethod);
-    toast({
-      title: 'Rental Requested (Mock)',
-      description: requestDetails,
-    });
+      toast({
+        title: 'Rental Requested',
+        description: `Your request for ${item.name} has been submitted.`,
+      });
+    } catch (error) {
+      console.error("Failed to create rental request:", error);
+      toast({ title: 'Error', description: 'Failed to submit rental request.', variant: 'destructive' });
+    }
   };
-  
+
   const nextImage = () => {
     setCurrentImageIndex((prevIndex) => (prevIndex + 1) % allImages.length);
   };
@@ -140,54 +154,54 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
 
   const isOwnerViewing = activeUserId === item.owner.id;
 
-  const isRequestButtonDisabled = 
-    isOwnerViewing || 
-    !selectedRange?.from || 
+  const isRequestButtonDisabled =
+    isOwnerViewing ||
+    !selectedRange?.from ||
     !selectedRange?.to ||
     (item.availabilityStatus !== 'Available') ||
     (item.deliveryMethod === 'Both' && !chosenDeliveryByRenter);
 
 
   return (
-    <div className="grid md:grid-cols-3 gap-8">
-      <div className="md:col-span-2 space-y-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+      <div className="lg:col-span-2 space-y-6">
         <Card className="overflow-hidden shadow-xl">
           <CardHeader className="p-0 relative aspect-[16/10] bg-muted">
             {allImages.length > 0 ? (
               <>
-              <Image
-                src={allImages[currentImageIndex]}
-                alt={item.name}
-                layout="fill"
-                objectFit="contain"
-                className="transition-opacity duration-300"
-                data-ai-hint={`${item.category} ${item.name} detail view`}
-              />
-              {allImages.length > 1 && (
-                <>
-                  <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white" onClick={prevImage}>
-                    <ChevronLeft className="h-6 w-6" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white" onClick={nextImage}>
-                    <ChevronRight className="h-6 w-6" />
-                  </Button>
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-1.5">
-                    {allImages.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentImageIndex(index)}
-                        className={`h-2 w-2 rounded-full ${index === currentImageIndex ? 'bg-primary' : 'bg-gray-300 hover:bg-gray-400'
-                          } transition-colors`}
-                        aria-label={`View image ${index + 1}`}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
+                <Image
+                  src={allImages[currentImageIndex]}
+                  alt={item.name}
+                  layout="fill"
+                  objectFit="contain"
+                  className="transition-opacity duration-300"
+                  data-ai-hint={`${item.category} ${item.name} detail view`}
+                />
+                {allImages.length > 1 && (
+                  <>
+                    <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white" onClick={prevImage}>
+                      <ChevronLeft className="h-6 w-6" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white" onClick={nextImage}>
+                      <ChevronRight className="h-6 w-6" />
+                    </Button>
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-1.5">
+                      {allImages.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentImageIndex(index)}
+                          className={`h-2 w-2 rounded-full ${index === currentImageIndex ? 'bg-primary' : 'bg-gray-300 hover:bg-gray-400'
+                            } transition-colors`}
+                          aria-label={`View image ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
               </>
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                <MapPin className="w-16 h-16 text-gray-300" /> 
+                <MapPin className="w-16 h-16 text-gray-300" />
               </div>
             )}
           </CardHeader>
@@ -215,10 +229,10 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
               {item.rating && <span className="flex items-center"><Star className="w-4 h-4 mr-1.5 text-yellow-400 fill-yellow-400" /> {item.rating.toFixed(1)} ({item.reviewsCount} reviews)</span>}
               {renderDeliveryMethodInfo()}
             </div>
-             <Separator className="my-3"/>
+            <Separator className="my-3" />
             <CardDescription className="text-base leading-relaxed whitespace-pre-line">{item.description}</CardDescription>
           </CardHeader>
-          
+
           {item.features && item.features.length > 0 && (
             <CardContent>
               <h3 className="text-lg font-semibold mb-2 font-headline">Features</h3>
@@ -233,7 +247,7 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
             </CardContent>
           )}
         </Card>
-        
+
         <Card className="shadow-xl">
           <CardHeader>
             <CardTitle className="font-headline text-xl">About the Owner</CardTitle>
@@ -241,17 +255,17 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
           <CardContent className="flex items-center justify-between space-x-4">
             <Link href={`/users/${item.owner.id}`} passHref>
               <div className="flex items-center space-x-4 group cursor-pointer">
-                <Image 
-                  src={item.owner.avatarUrl || 'https://placehold.co/100x100.png'} 
-                  alt={item.owner.name} 
-                  width={60} 
-                  height={60} 
+                <Image
+                  src={item.owner.avatarUrl || 'https://placehold.co/100x100.png'}
+                  alt={item.owner.name}
+                  width={60}
+                  height={60}
                   className="rounded-full group-hover:ring-2 group-hover:ring-primary transition-all"
-                  data-ai-hint="profile person" 
+                  data-ai-hint="profile person"
                 />
                 <div>
                   <p className="font-semibold text-lg group-hover:text-primary transition-colors">{item.owner.name}</p>
-                  <p className="text-sm text-muted-foreground">Joined {new Date().getFullYear() -1}</p> 
+                  <p className="text-sm text-muted-foreground">Joined {new Date().getFullYear() - 1}</p>
                 </div>
               </div>
             </Link>
@@ -264,8 +278,8 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
         </Card>
       </div>
 
-      <div className="md:col-span-1 space-y-6">
-        <Card className="sticky top-20 shadow-xl"> 
+      <div className="lg:col-span-1 space-y-6">
+        <Card className="sticky top-20 shadow-xl">
           <CardHeader>
             <CardTitle className="font-headline text-2xl">Rent This Item</CardTitle>
             <div className="text-3xl font-bold text-primary flex items-center mt-1">
@@ -283,21 +297,21 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
               </div>
             ) : item.availabilityStatus === 'Available' ? (
               <>
-                <AvailabilityCalendar 
-                  onDateSelect={handleDateSelect} 
+                <AvailabilityCalendar
+                  onDateSelect={handleDateSelect}
                   pricePerDay={item.pricePerDay}
                 />
                 {item.deliveryMethod === 'Both' && (
                   <div className="mt-4 space-y-2">
                     <Label className="font-semibold">Choose Delivery Option:</Label>
-                    <RadioGroup 
-                      value={chosenDeliveryByRenter || ""} 
+                    <RadioGroup
+                      value={chosenDeliveryByRenter || ""}
                       onValueChange={(value) => setChosenDeliveryByRenter(value as 'Pick Up' | 'Delivery')}
                       className="flex flex-col gap-2"
                     >
                       <Label htmlFor="delivery-pickup-choice" className="flex items-center space-x-2 p-3 border rounded-md hover:bg-muted cursor-pointer [&:has([data-state=checked])]:border-primary">
                         <RadioGroupItem value="Pick Up" id="delivery-pickup-choice" />
-                        <Package className="w-5 h-5 text-primary" /> 
+                        <Package className="w-5 h-5 text-primary" />
                         <span>Pick Up</span>
                       </Label>
                       <Label htmlFor="delivery-delivery-choice" className="flex items-center space-x-2 p-3 border rounded-md hover:bg-muted cursor-pointer [&:has([data-state=checked])]:border-primary">
@@ -308,9 +322,9 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
                     </RadioGroup>
                   </div>
                 )}
-                <Button 
-                  onClick={handleRequestToRent} 
-                  className="w-full mt-6 bg-accent hover:bg-accent/90 text-accent-foreground" 
+                <Button
+                  onClick={handleRequestToRent}
+                  className="w-full mt-6 bg-accent hover:bg-accent/90 text-accent-foreground"
                   size="lg"
                   disabled={isRequestButtonDisabled}
                 >
@@ -324,11 +338,11 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
                   Currently {item.availabilityStatus}
                   {item.availabilityStatus === 'Rented' && detailedAvailabilityMessage && (
                     <span className="block text-sm text-muted-foreground font-normal mt-1">
-                       {detailedAvailabilityMessage}
+                      {detailedAvailabilityMessage}
                     </span>
                   )}
                 </p>
-                {item.availabilityStatus !== 'Rented' && item.availabilityStatus !== 'Available' && (
+                {item.availabilityStatus === 'Unavailable' && (
                   <p className="text-sm text-muted-foreground">This item is not available for rent at the moment.</p>
                 )}
               </div>

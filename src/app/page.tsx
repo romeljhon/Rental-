@@ -15,7 +15,7 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeUserId, setActiveUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [category, setCategory] = useState(''); 
+  const [category, setCategory] = useState('');
   const [sortOption, setSortOption] = useState('relevance');
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function HomePage() {
 
     // Filter out items with 'Unavailable' status
     currentItems = currentItems.filter(item => item.availabilityStatus !== 'Unavailable');
-    
+
     // Filter out items owned by the active user
     if (activeUserId) {
       currentItems = currentItems.filter(item => item.owner.id !== activeUserId);
@@ -66,7 +66,7 @@ export default function HomePage() {
     if (category && category !== 'all') {
       currentItems = currentItems.filter(item => item.category.toLowerCase().replace(/\s*&\s*/, '').replace(/\s+/g, '') === category);
     }
-    
+
     switch (sortOption) {
       case 'price_asc':
         currentItems.sort((a, b) => a.pricePerDay - b.pricePerDay);
@@ -74,7 +74,7 @@ export default function HomePage() {
       case 'price_desc':
         currentItems.sort((a, b) => b.pricePerDay - a.pricePerDay);
         break;
-      case 'newest': 
+      case 'newest':
         currentItems.sort((a, b) => {
           // Attempt to sort by ID or a timestamp if available. Using ID as a proxy.
           const idA = parseInt(a.id.split('_')[1] || '0', 10); // Assuming format like 'item_timestamp_random'
@@ -85,7 +85,7 @@ export default function HomePage() {
       case 'rating':
         currentItems.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         break;
-      default: 
+      default:
         break;
     }
     setFilteredItems(currentItems);
@@ -102,17 +102,17 @@ export default function HomePage() {
 
   return (
     <div className="space-y-8">
-      <section className="text-center py-8">
-        <h1 className="text-4xl md:text-5xl font-bold font-headline mb-4 text-primary">
+      <section className="text-center py-6 md:py-12">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-headline mb-4 text-primary tracking-tight">
           Discover Your Next Rental
         </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+        <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-2">
           From everyday essentials to unique experiences, find what you need, when you need it.
         </p>
       </section>
 
-      <ItemFilters 
-        onSearchChange={setSearchTerm} 
+      <ItemFilters
+        onSearchChange={setSearchTerm}
         onCategoryChange={setCategory}
         onSortChange={setSortOption}
       />
@@ -127,7 +127,7 @@ export default function HomePage() {
         <div className="text-center py-12">
           <h2 className="text-2xl font-semibold text-muted-foreground mb-2">No Items Found</h2>
           <p className="text-foreground">Try adjusting your search or filters, or check back later!</p>
-           <Button variant="outline" className="mt-4" onClick={() => { setSearchTerm(''); setCategory(''); setSortOption('relevance'); }}>
+          <Button variant="outline" className="mt-4" onClick={() => { setSearchTerm(''); setCategory(''); setSortOption('relevance'); }}>
             Clear Filters
           </Button>
         </div>

@@ -37,7 +37,7 @@ export function ItemFilters({ onSearchChange, onCategoryChange, onSortChange }: 
     event.preventDefault();
     onSearchChange(searchTerm);
   };
-  
+
   const handleCategorySelect = (value: string) => {
     setSelectedCategory(value);
     onCategoryChange(value);
@@ -50,10 +50,10 @@ export function ItemFilters({ onSearchChange, onCategoryChange, onSortChange }: 
 
 
   return (
-    <div className="mb-8 p-6 bg-card rounded-xl shadow-md">
-      <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
-        <div className="md:col-span-2 lg:col-span-2">
-          <label htmlFor="search" className="block text-sm font-medium text-foreground mb-1">Search Items</label>
+    <div className="mb-8 p-4 md:p-6 bg-card rounded-xl shadow-md">
+      <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+        <div className="sm:col-span-2">
+          <label htmlFor="search" className="block text-xs md:text-sm font-medium text-foreground mb-1">Search Items</label>
           <div className="relative">
             <Input
               id="search"
@@ -69,8 +69,8 @@ export function ItemFilters({ onSearchChange, onCategoryChange, onSortChange }: 
           </div>
         </div>
 
-        <div>
-          <label htmlFor="category" className="block text-sm font-medium text-foreground mb-1">Category</label>
+        <div className="w-full">
+          <label htmlFor="category" className="block text-xs md:text-sm font-medium text-foreground mb-1">Category</label>
           <Select value={selectedCategory} onValueChange={handleCategorySelect}>
             <SelectTrigger id="category" className="w-full">
               <SelectValue placeholder="All Categories" />
@@ -88,9 +88,9 @@ export function ItemFilters({ onSearchChange, onCategoryChange, onSortChange }: 
             </SelectContent>
           </Select>
         </div>
-        
-        <div>
-          <label htmlFor="sort" className="block text-sm font-medium text-foreground mb-1">Sort By</label>
+
+        <div className="w-full">
+          <label htmlFor="sort" className="block text-xs md:text-sm font-medium text-foreground mb-1">Sort By</label>
           <Select value={sortOption} onValueChange={handleSortSelect}>
             <SelectTrigger id="sort" className="w-full">
               <SelectValue placeholder="Sort by" />
