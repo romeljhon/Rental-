@@ -1,5 +1,5 @@
 import type { RentalRequest, UserProfile } from '@/types';
-import { fetchApi } from './api';
+import { fetchApi, clearApiCache } from './api';
 
 function mapBackendToFrontend(req: any): RentalRequest {
     return {
@@ -48,6 +48,7 @@ export async function createRequest(requestData: Omit<RentalRequest, 'id' | 'req
         body: JSON.stringify(backendData)
     });
 
+    clearApiCache('/requests/');
     return mapBackendToFrontend(newRequest);
 }
 
@@ -62,6 +63,8 @@ export async function updateRequestStatus(requestId: string, status: RentalReque
             method: 'PATCH',
             body: JSON.stringify(body)
         });
+        clearApiCache('/requests/');
+        clearApiCache(`/requests/${requestId}/`);
         return mapBackendToFrontend(updatedRequest);
     } catch (error) {
         console.error(`Failed to update request ${requestId}:`, error);

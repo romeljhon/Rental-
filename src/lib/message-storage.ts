@@ -1,5 +1,5 @@
 import type { Conversation, Message, UserProfile } from '@/types';
-import { fetchApi } from './api';
+import { fetchApi, clearApiCache } from './api';
 
 function mapBackendConversation(conv: any, loggedInUserId: string): Conversation {
     const lastMsg = conv.messages && conv.messages.length > 0
@@ -70,6 +70,8 @@ export async function sendMessage(conversationId: string, senderId: string, text
                 text: text
             })
         });
+        clearApiCache(`/messages/?conversation_id=${conversationId}`);
+        clearApiCache(`/conversations/?user_id=${senderId}`);
         return mapBackendMessage(data);
     } catch (error) {
         console.error("Failed to send message:", error);
@@ -86,6 +88,7 @@ export async function createConversation(participantIds: string[], itemId?: stri
                 item_context: itemId
             })
         });
+        clearApiCache(`/conversations/?user_id=${participantIds[0]}`);
         return mapBackendConversation(data, participantIds[0]);
     } catch (error) {
         console.error("Failed to create conversation:", error);

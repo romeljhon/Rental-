@@ -16,22 +16,22 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
 
 class ItemViewSet(viewsets.ModelViewSet):
-    queryset = Item.objects.all()
+    queryset = Item.objects.select_related('category').all()
     serializer_class = ItemSerializer
 
     def get_queryset(self):
-        queryset = Item.objects.all()
+        queryset = self.queryset
         category_id = self.request.query_params.get('category_id')
         if category_id:
             queryset = queryset.filter(category_id=category_id)
         return queryset
 
 class RentalRequestViewSet(viewsets.ModelViewSet):
-    queryset = RentalRequest.objects.all()
+    queryset = RentalRequest.objects.select_related('item').all()
     serializer_class = RentalRequestSerializer
 
     def get_queryset(self):
-        queryset = RentalRequest.objects.all()
+        queryset = self.queryset
         requester = self.request.query_params.get('requester')
         owner = self.request.query_params.get('owner')
         if requester:
@@ -52,17 +52,15 @@ class NotificationViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-timestamp')
 
 class ConversationViewSet(viewsets.ModelViewSet):
-    queryset = Conversation.objects.all()
+    queryset = Conversation.objects.select_related('item_context').prefetch_related('messages').all()
     serializer_class = ConversationSerializer
 
     def get_queryset(self):
-        queryset = Conversation.objects.all()
+        queryset = self.queryset
         user_id = self.request.query_params.get('user_id')
         if user_id:
-            # Simple check if user_id is in participant_ids list
-            # Note: This is a hack for SQLite + JSONField. In Production use a more robust check.
-            queryset = [c for c in queryset if user_id in c.participant_ids]
-            return queryset
+            # Better way for JSONField on SQLite/Postgres
+            queryset = queryset.filter(participant_ids__contains=user_id)
         return queryset
 
 class MessageViewSet(viewsets.ModelViewSet):

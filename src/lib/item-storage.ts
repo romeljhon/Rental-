@@ -1,6 +1,6 @@
 import type { RentalItem, UserProfile } from '@/types';
 import { getActiveUserProfile } from '@/lib/auth';
-import { fetchApi } from './api';
+import { fetchApi, clearApiCache } from './api';
 
 // Helper to map backend item to frontend RentalItem
 function mapBackendToFrontend(item: any): RentalItem {
@@ -78,6 +78,7 @@ export async function addItem(itemData: Omit<RentalItem, 'id' | 'owner' | 'ratin
     body: JSON.stringify(backendData)
   });
 
+  clearApiCache('/items/');
   return mapBackendToFrontend(newItem);
 }
 
@@ -99,6 +100,8 @@ export async function updateItem(updatedItemData: RentalItem): Promise<RentalIte
       method: 'PATCH',
       body: JSON.stringify(backendData)
     });
+    clearApiCache('/items/');
+    clearApiCache(`/items/${updatedItemData.id}/`);
     return mapBackendToFrontend(updatedItem);
   } catch (error) {
     console.error(`Failed to update item ${updatedItemData.id}:`, error);
@@ -111,6 +114,8 @@ export async function deleteItem(itemId: string): Promise<boolean> {
     await fetchApi(`/items/${itemId}/`, {
       method: 'DELETE'
     });
+    clearApiCache('/items/');
+    clearApiCache(`/items/${itemId}/`);
     return true;
   } catch (error) {
     console.error(`Failed to delete item ${itemId}:`, error);

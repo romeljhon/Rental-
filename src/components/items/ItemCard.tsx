@@ -1,6 +1,5 @@
-
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { MapPin, Star, Eye, Edit, Trash2, Package, Truck, ListChecks, CalendarClock } from 'lucide-react';
@@ -17,9 +16,7 @@ interface ItemCardProps {
 }
 
 export function ItemCard({ item, onEdit, onRemove }: ItemCardProps) {
-  const [availabilityMessage, setAvailabilityMessage] = useState<string | null>(null);
-
-  useEffect(() => {
+  const availabilityMessage = useMemo(() => {
     if (item.availabilityStatus === 'Rented' && item.availableFromDate) {
       const currentDate = new Date();
       currentDate.setHours(0, 0, 0, 0);
@@ -27,24 +24,23 @@ export function ItemCard({ item, onEdit, onRemove }: ItemCardProps) {
       dateFromItem.setHours(0, 0, 0, 0);
 
       if (currentDate >= dateFromItem) {
-        setAvailabilityMessage(`Due: ${format(dateFromItem, 'MMM d')}. Pending confirm.`);
+        return `Due: ${format(dateFromItem, 'MMM d')}. Pending confirm.`;
       } else {
-        setAvailabilityMessage(`Back: ${format(dateFromItem, 'MMM d')}`);
+        return `Back: ${format(dateFromItem, 'MMM d')}`;
       }
-    } else {
-      setAvailabilityMessage(null);
     }
+    return null;
   }, [item.availabilityStatus, item.availableFromDate]);
 
   const renderDeliveryIcon = () => {
     if (!item.deliveryMethod) return null;
     switch (item.deliveryMethod) {
       case 'Pick Up':
-        return <Package className="w-3 h-3 mr-1 text-primary" title="Pick Up Only" />;
+        return <Package className="w-3 h-3 mr-1 text-primary" />;
       case 'Delivery':
-        return <Truck className="w-3 h-3 mr-1 text-primary" title="Delivery Only" />;
+        return <Truck className="w-3 h-3 mr-1 text-primary" />;
       case 'Both':
-        return <ListChecks className="w-3 h-3 mr-1 text-primary" title="Pick Up or Delivery" />;
+        return <ListChecks className="w-3 h-3 mr-1 text-primary" />;
       default:
         return null;
     }
@@ -93,7 +89,7 @@ export function ItemCard({ item, onEdit, onRemove }: ItemCardProps) {
           </Link>
         </CardTitle>
         <p className="text-sm text-muted-foreground line-clamp-2 mb-2 h-10">{item.description}</p>
-        
+
         <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
           {item.location && (
             <div className="flex items-center">
@@ -121,10 +117,10 @@ export function ItemCard({ item, onEdit, onRemove }: ItemCardProps) {
             </Button>
           </Link>
           {onEdit && (
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              onClick={() => onEdit(item.id)} 
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => onEdit(item.id)}
               aria-label={`Edit ${item.name}`}
               className="h-9 w-9 hover:bg-secondary/80"
             >
@@ -132,10 +128,10 @@ export function ItemCard({ item, onEdit, onRemove }: ItemCardProps) {
             </Button>
           )}
           {onRemove && (
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              onClick={() => onRemove(item.id)} 
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => onRemove(item.id)}
               aria-label={`Remove ${item.name}`}
               className="h-9 w-9 text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
