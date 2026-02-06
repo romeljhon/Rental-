@@ -10,11 +10,13 @@ function mapBackendToFrontend(item: any): RentalItem {
     description: item.description,
     category: item.category_name || 'General',
     pricePerDay: parseFloat(item.price_per_day),
-    imageUrl: item.image_url || 'https://placehold.co/600x400.png',
-    availabilityStatus: item.is_available ? 'Available' : 'Unavailable',
-    owner: {
+    securityDeposit: parseFloat(item.security_deposit) || 0,
+    imageUrl: item.image_url || (item.item_images && item.item_images.length > 0 ? item.item_images[0].image : 'https://placehold.co/600x400.png'),
+    itemImages: item.item_images,
+    availabilityStatus: item.is_available ? 'Available' : (item.status === 'Rented' ? 'Rented' : 'Unavailable'),
+    owner: item.owner_details || {
       id: item.owner_id || 'user123',
-      name: item.owner_id === 'user123' ? 'John Doe' : item.owner_id === 'user456' ? 'Alice' : 'User',
+      name: `User ${item.owner_id}`,
       avatarUrl: 'https://placehold.co/100x100.png'
     },
     location: item.location || 'Nearby',
@@ -47,7 +49,7 @@ export async function getItemById(id: string): Promise<RentalItem | null> {
   }
 }
 
-export async function addItem(itemData: Omit<RentalItem, 'id' | 'owner' | 'rating' | 'reviewsCount' | 'availabilityStatus' | 'availableFromDate'> & { imageUrl?: string }): Promise<RentalItem> {
+export async function addItem(itemData: Omit<RentalItem, 'id' | 'owner' | 'rating' | 'reviewsCount' | 'availabilityStatus' | 'availableFromDate' | 'imageUrl'> & { files?: File[]; imageUrl?: string }): Promise<RentalItem> {
   let categories = await fetchApi('/categories/');
   let category = categories.find((c: any) => c.name.toLowerCase() === itemData.category.toLowerCase());
 
@@ -58,25 +60,27 @@ export async function addItem(itemData: Omit<RentalItem, 'id' | 'owner' | 'ratin
     });
   }
 
-  const activeUser = getActiveUserProfile();
+  const formData = new FormData();
+  formData.append('name', itemData.name);
+  formData.append('description', itemData.description);
+  formData.append('price_per_day', itemData.pricePerDay.toString());
+  formData.append('security_deposit', itemData.securityDeposit.toString());
+  formData.append('category', category.id.toString());
+  formData.append('location', itemData.location || 'Nearby');
+  formData.append('delivery_method', itemData.deliveryMethod || 'Both');
+  formData.append('is_available', 'true');
 
-  const backendData = {
-    name: itemData.name,
-    description: itemData.description,
-    price_per_day: itemData.pricePerDay,
-    category: category.id,
-    image_url: itemData.imageUrl || '',
-    location: itemData.location || 'Nearby',
-    rating: 0,
-    reviews_count: 0,
-    is_available: true,
-    owner_id: activeUser?.id || 'user123',
-    delivery_method: itemData.deliveryMethod || 'Both'
-  };
+  if (itemData.files) {
+    itemData.files.forEach(file => {
+      formData.append('images', file);
+    });
+  } else if (itemData.imageUrl) {
+    formData.append('image_url', itemData.imageUrl);
+  }
 
   const newItem = await fetchApi('/items/', {
     method: 'POST',
-    body: JSON.stringify(backendData)
+    body: formData
   });
 
   clearApiCache('/items/');

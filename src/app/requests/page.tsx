@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import type { RentalRequest, UserProfile } from '@/types';
 import { Loader2, Inbox } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getActiveUserId, getActiveUserProfile, MOCK_USER_JOHN, MOCK_USER_ALICE } from '@/lib/auth';
+import { getActiveUserId, getActiveUserProfile } from '@/lib/auth';
 import { useNotifications } from '@/contexts/NotificationContext';
 
 import { getAllRequests, updateRequestStatus } from '@/lib/request-storage';
@@ -78,43 +78,7 @@ export default function RequestsPage() {
       ).sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime())
     );
 
-    let notifTargetUserId: string | null = null;
-    let notifTitle = '';
-    let notifMessage = '';
-
-    if (newStatus === 'Approved') {
-      notifTargetUserId = originalRequest.requester.id;
-      notifTitle = 'Request Approved!';
-      notifMessage = `${originalRequest.owner.name} approved your request for ${originalRequest.item.name}.`;
-    } else if (newStatus === 'Rejected') {
-      notifTargetUserId = originalRequest.requester.id;
-      notifTitle = 'Request Rejected';
-      notifMessage = `${originalRequest.owner.name} rejected your request for ${originalRequest.item.name}.`;
-    } else if (newStatus === 'Cancelled') {
-      notifTargetUserId = originalRequest.requester.id === currentUserId ? originalRequest.owner.id : originalRequest.requester.id;
-      notifTitle = 'Request Cancelled';
-      notifMessage = `The request for ${originalRequest.item.name} has been cancelled by ${currentUserProfile.name}.`;
-    } else if (newStatus === 'ReceiptConfirmed') {
-      notifTargetUserId = originalRequest.owner.id;
-      notifTitle = 'Item Receipt Confirmed';
-      notifMessage = `${originalRequest.requester.name} confirmed receipt of ${originalRequest.item.name}.`;
-    } else if (newStatus === 'Completed' && rating !== undefined) {
-      // No separate notification for rating submission itself, already covered by toast.
-      // But if rating triggers other flows (e.g., owner notification of new rating), add here.
-    }
-
-
-    if (notifTargetUserId && notifTitle && notifTargetUserId !== currentUserProfile.id) { // Don't notify self
-      addNotification({
-        targetUserId: notifTargetUserId,
-        eventType: newStatus === 'ReceiptConfirmed' ? 'item_receipt_confirmed' : 'request_update',
-        title: notifTitle,
-        message: notifMessage,
-        link: '/requests',
-        relatedItemId: originalRequest.itemId,
-        relatedUser: { id: currentUserProfile.id, name: currentUserProfile.name }
-      });
-    }
+    // Notifications are now handled by backend signals
   };
 
   const handleApprove = (requestId: string) => {

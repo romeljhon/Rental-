@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetTitle, SheetClose, SheetTrigger } from '@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import React, { useState, useEffect, useMemo } from 'react';
 import { ThemeToggleButton } from './ThemeToggleButton';
-import { getActiveUserProfile, setActiveUserId, getAllMockUsers, getActiveUserId, logout } from '@/lib/auth';
+import { getActiveUserProfile, getActiveUserId, logout, initializeAuth } from '@/lib/auth';
 import { useNotifications } from '@/contexts/NotificationContext';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
@@ -41,8 +41,14 @@ export function Header() {
   const [notificationFilter, setNotificationFilter] = useState<'all' | 'unread' | 'read'>('all');
 
   useEffect(() => {
-    setIsMounted(true);
-    setActiveUser(getActiveUserProfile());
+    const init = async () => {
+      setIsMounted(true);
+      const profile = await initializeAuth();
+      if (profile) {
+        setActiveUser(profile);
+      }
+    };
+    init();
   }, [pathname, currentActiveUserId]);
 
   useEffect(() => {

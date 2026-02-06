@@ -16,47 +16,72 @@ export interface UserProfile {
   // email?: string; // Add if needed for contact or identification
 }
 
+export interface ItemImage {
+  id: string;
+  image: string;
+  isPrimary: boolean;
+}
+
 export interface RentalItem {
   id: string;
   name: string;
   description: string;
-  category: string; // Could be an enum or a string referencing RentalCategory.name
+  category: string;
   pricePerDay: number;
-  imageUrl: string; // Primary image URL
-  images?: string[]; // Additional image URLs
-  availabilityStatus: 'Available' | 'Rented' | 'Unavailable'; // More descriptive status
-  availableFromDate?: Date; // Date when a 'Rented' item will become available
+  securityDeposit: number;
+  imageUrl: string;
+  itemImages?: ItemImage[];
+  availabilityStatus: 'Available' | 'Rented' | 'Unavailable';
+  availableFromDate?: Date;
   owner: UserProfile;
-  location?: string; // e.g., "City, State" or specific address
-  rating?: number; // Average rating (e.g., 1-5)
+  location?: string;
+  rating?: number;
   reviewsCount?: number;
-  features?: string[]; // e.g., ["WiFi", "Parking", "Pet-friendly"]
+  features?: string[];
   deliveryMethod?: 'Pick Up' | 'Delivery' | 'Both';
   createdAt?: Date;
-  // Could add specific fields based on category, e.g., mileage for cars
 }
 
 export interface RentalCategory {
   id: string;
   name: string;
-  icon: LucideIcon; // For UI representation
-  itemCount?: number; // Optional: for displaying number of items in this category
+  icon: LucideIcon;
+  itemCount?: number;
+}
+
+export interface Transaction {
+  id: string;
+  amount: number;
+  transactionType: 'Payment' | 'Refund' | 'Payout';
+  status: 'Pending' | 'Success' | 'Failed';
+  createdAt: Date;
+}
+
+export interface Dispute {
+  id: string;
+  reason: string;
+  evidenceImage?: string;
+  status: 'Open' | 'Resolved' | 'Arbitrated';
 }
 
 export interface RentalRequest {
   id: string;
   itemId: string;
-  item: Pick<RentalItem, 'id' | 'name' | 'imageUrl' | 'pricePerDay'>; // Embed partial item info
+  item: Pick<RentalItem, 'id' | 'name' | 'imageUrl' | 'pricePerDay'>;
   requester: UserProfile;
   owner: UserProfile;
   startDate: Date;
   endDate: Date;
-  status: 'Pending' | 'Approved' | 'Rejected' | 'Cancelled' | 'Completed' | 'AwaitingPayment' | 'ReceiptConfirmed';
+  status: 'Pending' | 'Approved' | 'AwaitingPayment' | 'Paid' | 'InHand' | 'Returned' | 'Completed' | 'Rejected' | 'Cancelled' | 'Disputed';
   totalPrice: number;
+  depositAmount: number;
+  handoverCode?: string;
+  returnCode?: string;
   requestedAt: Date;
-  chosenDeliveryMethod?: 'Pick Up' | 'Delivery'; // New field for renter's choice
-  ratingGiven?: number; // Rating given by the renter for this specific rental
-  // messageThreadId?: string; // Link to a messaging thread
+  chosenDeliveryMethod?: 'Pick Up' | 'Delivery';
+  ratingGiven?: number;
+  transactions?: Transaction[];
+  dispute?: Dispute;
 }
 
 export interface Message {

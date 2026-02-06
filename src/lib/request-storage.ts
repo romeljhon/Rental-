@@ -11,14 +11,19 @@ function mapBackendToFrontend(req: any): RentalRequest {
             imageUrl: req.item_details?.image_url || 'https://placehold.co/100x100.png',
             pricePerDay: parseFloat(req.item_details?.price_per_day || req.total_price),
         },
-        requester: { id: req.requester_name, name: req.requester_name, avatarUrl: 'https://placehold.co/40x40.png' },
-        owner: { id: req.owner_name, name: req.owner_name, avatarUrl: 'https://placehold.co/40x40.png' },
+        requester: { id: req.requester_id, name: req.requester_name, avatarUrl: 'https://placehold.co/40x40.png' },
+        owner: { id: req.owner_id, name: req.owner_name, avatarUrl: 'https://placehold.co/40x40.png' },
         startDate: new Date(req.start_date),
         endDate: new Date(req.end_date),
         status: req.status as RentalRequest['status'],
         totalPrice: parseFloat(req.total_price),
+        depositAmount: parseFloat(req.deposit_amount) || 0,
+        handoverCode: req.handover_code,
+        returnCode: req.return_code,
         requestedAt: new Date(req.requested_at),
         ratingGiven: req.rating_given,
+        transactions: req.transactions,
+        dispute: req.dispute,
     };
 }
 
@@ -32,7 +37,7 @@ export async function getAllRequests(): Promise<RentalRequest[]> {
     }
 }
 
-export async function createRequest(requestData: Omit<RentalRequest, 'id' | 'requestedAt' | 'item' | 'requester' | 'owner'> & { itemId: string, requesterName: string, ownerName: string }): Promise<RentalRequest> {
+export async function createRequest(requestData: Omit<RentalRequest, 'id' | 'requestedAt' | 'item' | 'requester' | 'owner' | 'depositAmount'> & { itemId: string, requesterName: string, ownerName: string, depositAmount: number }): Promise<RentalRequest> {
     const backendData = {
         item: requestData.itemId,
         requester_name: requestData.requesterName,
@@ -41,6 +46,7 @@ export async function createRequest(requestData: Omit<RentalRequest, 'id' | 'req
         end_date: requestData.endDate.toISOString().split('T')[0],
         status: requestData.status,
         total_price: requestData.totalPrice,
+        deposit_amount: requestData.depositAmount,
     };
 
     const newRequest = await fetchApi('/requests/', {
@@ -68,6 +74,47 @@ export async function updateRequestStatus(requestId: string, status: RentalReque
         return mapBackendToFrontend(updatedRequest);
     } catch (error) {
         console.error(`Failed to update request ${requestId}:`, error);
+        return null;
+    }
+}
+
+export async function confirmHandover(requestId: string, code: string): Promise<RentalRequest | null> {
+    try {
+        const data = await fetchApi(`/requests/${requestId}/confirm_handover/`, {
+            method: 'POST',
+            body: JSON.stringify({ code })
+        });
+        clearApiCache('/requests/');
+        return mapBackendToFrontend(data);
+    } catch (error) {
+        console.error("Handover failed:", error);
+        throw error;
+    }
+}
+
+export async function confirmReturn(requestId: string, code: string): Promise<RentalRequest | null> {
+    try {
+        const data = await fetchApi(`/requests/${requestId}/confirm_return/`, {
+            method: 'POST',
+            body: JSON.stringify({ code })
+        });
+        clearApiCache('/requests/');
+        return mapBackendToFrontend(data);
+    } catch (error) {
+        console.error("Return failed:", error);
+        throw error;
+    }
+}
+
+export async function simulatePayment(requestId: string): Promise<RentalRequest | null> {
+    try {
+        const data = await fetchApi(`/requests/${requestId}/simulate_payment/`, {
+            method: 'POST'
+        });
+        clearApiCache('/requests/');
+        return mapBackendToFrontend(data);
+    } catch (error) {
+        console.error("Payment failed:", error);
         return null;
     }
 }

@@ -10,15 +10,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, Loader2, MessageSquare, Search } from 'lucide-react';
 import type { Conversation, Message as MessageType, UserProfile, RentalItem } from '@/types';
 import Image from 'next/image';
-import { getActiveUserId, getActiveUserProfile, MOCK_USER_JOHN, MOCK_USER_ALICE } from '@/lib/auth';
+import { getActiveUserId, getActiveUserProfile } from '@/lib/auth';
 import { useNotifications } from '@/contexts/NotificationContext';
 
-const mockUsersForChat: UserProfile[] = [
-  MOCK_USER_JOHN,
-  MOCK_USER_ALICE,
-  { id: 'user456', name: 'Bob The Builder', avatarUrl: 'https://placehold.co/40x40.png' },
-  { id: 'user789', name: 'Charlie Chaplin', avatarUrl: 'https://placehold.co/40x40.png' },
-];
+const mockUsersForChat: UserProfile[] = [];
 
 const ITEM_CONTEXT_CAMERA: Pick<RentalItem, 'id' | 'name'> = { id: '1', name: 'Professional DSLR Camera' };
 const ITEM_CONTEXT_BIKE: Pick<RentalItem, 'id' | 'name'> = { id: '2', name: 'Mountain Bike - Full Suspension' };
@@ -27,53 +22,9 @@ const ITEM_CONTEXT_JACKET: Pick<RentalItem, 'id' | 'name'> = { id: '3', name: 'V
 const CONVERSATIONS_STORAGE_KEY = 'rentaleaseConversations';
 const MESSAGES_STORAGE_KEY = 'rentaleaseMessages';
 
-const getInitialMockConversations = (loggedInUserId: string): Conversation[] => [
-  {
-    id: 'conv1',
-    participants: [MOCK_USER_JOHN, mockUsersForChat.find(u => u.id === 'user456')!],
-    lastMessage: { id: 'msg1', conversationId: 'conv1', senderId: 'user456', text: 'Hey, is the camera still available for next weekend?', timestamp: new Date(Date.now() - 1000 * 60 * 5), isRead: loggedInUserId === MOCK_USER_JOHN.id ? false : loggedInUserId === 'user456' ? true : false },
-    unreadCount: loggedInUserId === MOCK_USER_JOHN.id ? 1 : 0,
-    itemContext: ITEM_CONTEXT_CAMERA
-  },
-  {
-    id: 'conv2',
-    participants: [MOCK_USER_ALICE, mockUsersForChat.find(u => u.id === 'user789')!],
-    lastMessage: { id: 'msg2', conversationId: 'conv2', senderId: MOCK_USER_ALICE.id, text: 'Sure, I can drop it off on Friday evening.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), isRead: true },
-    itemContext: ITEM_CONTEXT_BIKE
-  },
-  {
-    id: 'conv3',
-    participants: [MOCK_USER_JOHN, MOCK_USER_ALICE],
-    lastMessage: { id: 'msg3', conversationId: 'conv3', senderId: MOCK_USER_ALICE.id, text: 'Hi John, about the jacket...', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 1), isRead: loggedInUserId === MOCK_USER_JOHN.id ? false : loggedInUserId === MOCK_USER_ALICE.id ? true : false },
-    unreadCount: loggedInUserId === MOCK_USER_JOHN.id ? 1 : 0,
-    itemContext: ITEM_CONTEXT_JACKET
-  },
-  {
-    id: 'conv4',
-    participants: [MOCK_USER_JOHN, mockUsersForChat.find(u => u.id === 'user456')!],
-    lastMessage: { id: 'msg4', conversationId: 'conv4', senderId: MOCK_USER_JOHN.id, text: 'Just a general question.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), isRead: true },
-  },
-];
+const getInitialMockConversations = (loggedInUserId: string): Conversation[] => [];
 
-const initialMockMessages: Record<string, MessageType[]> = {
-  conv1: [
-    { id: 'msgA', conversationId: 'conv1', senderId: 'user456', text: 'Hi John!', timestamp: new Date(Date.now() - 1000 * 60 * 10) },
-    { id: 'msgB', conversationId: 'conv1', senderId: MOCK_USER_JOHN.id, text: 'Hey Bob! What\'s up?', timestamp: new Date(Date.now() - 1000 * 60 * 8) },
-    { id: 'msg1', conversationId: 'conv1', senderId: 'user456', text: 'Hey, is the camera still available for next weekend?', timestamp: new Date(Date.now() - 1000 * 60 * 5) },
-  ],
-  conv2: [
-    { id: 'msgC', conversationId: 'conv2', senderId: 'user789', text: 'Regarding the bike rental...', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3) },
-    { id: 'msg2', conversationId: 'conv2', senderId: MOCK_USER_ALICE.id, text: 'Sure, I can drop it off on Friday evening.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2) },
-  ],
-  conv3: [
-    { id: 'msgD', conversationId: 'conv3', senderId: MOCK_USER_ALICE.id, text: 'Hi John, about the jacket...', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 1) },
-    { id: 'msgE', conversationId: 'conv3', senderId: MOCK_USER_JOHN.id, text: 'Hey Alice, what about it?', timestamp: new Date(Date.now() - 1000 * 60 * 58) },
-  ],
-  conv4: [
-    { id: 'msgF', conversationId: 'conv4', senderId: MOCK_USER_JOHN.id, text: 'Just a general question.', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24) },
-    { id: 'msgG', conversationId: 'conv4', senderId: 'user456', text: 'Sure, what is it?', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 23) },
-  ]
-};
+const initialMockMessages: Record<string, MessageType[]> = {};
 
 const parseStoredConversations = (jsonString: string | null, loggedInUserId: string): Conversation[] => {
   if (!jsonString) return getInitialMockConversations(loggedInUserId);

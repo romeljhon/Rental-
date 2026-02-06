@@ -17,9 +17,10 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
         return cache[cacheKey].data;
     }
 
-    const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-    };
+    const headers: Record<string, string> = {};
+    if (!(options.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+    }
 
     if (typeof window !== 'undefined') {
         const token = localStorage.getItem('rentaleaseToken');

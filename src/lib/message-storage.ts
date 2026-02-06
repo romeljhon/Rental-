@@ -8,9 +8,9 @@ function mapBackendConversation(conv: any, loggedInUserId: string): Conversation
 
     return {
         id: conv.id.toString(),
-        participants: conv.participant_ids.map((id: string) => ({
+        participants: conv.participants_details || conv.participant_ids.map((id: string) => ({
             id,
-            name: id === 'user123' ? 'John Doe' : id === 'user456' ? 'Alice' : 'User',
+            name: `User ${id}`,
             avatarUrl: 'https://placehold.co/40x40.png'
         })),
         lastMessage: lastMsg ? {

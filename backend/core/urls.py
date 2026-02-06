@@ -3,13 +3,18 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     health_check, ItemViewSet, CategoryViewSet, RentalRequestViewSet, 
     NotificationViewSet, ConversationViewSet, MessageViewSet,
-    RegisterAPI, LoginAPI
+    ItemImageViewSet, TransactionViewSet, DisputeViewSet,
+    UserViewSet, RegisterAPI, LoginAPI
 )
 
 router = DefaultRouter()
+router.register(r'users', UserViewSet)
 router.register(r'items', ItemViewSet)
+router.register(r'item-images', ItemImageViewSet)
 router.register(r'categories', CategoryViewSet)
 router.register(r'requests', RentalRequestViewSet)
+router.register(r'transactions', TransactionViewSet)
+router.register(r'disputes', DisputeViewSet)
 router.register(r'notifications', NotificationViewSet)
 router.register(r'conversations', ConversationViewSet)
 router.register(r'messages', MessageViewSet)

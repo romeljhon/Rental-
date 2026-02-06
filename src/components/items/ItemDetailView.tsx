@@ -10,7 +10,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { MapPin, Star, MessageSquare, CheckCircle, Tag, Users, CalendarDays, ChevronLeft, ChevronRight, Package, Truck, ListChecks, CalendarClock, Info } from 'lucide-react';
+import {
+  MapPin, Star, MessageSquare, CheckCircle, Tag, Users, Info, CalendarClock, ShieldCheck,
+  Package, Truck, ArrowRight, X, ChevronLeft, ChevronRight, ListChecks, CalendarDays
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DateRange } from 'react-day-picker';
 import { Separator } from '@/components/ui/separator';
@@ -57,7 +60,7 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
   }, [item.availabilityStatus, item.availableFromDate]);
 
 
-  const allImages = [item.imageUrl, ...(item.images || [])].filter(Boolean) as string[];
+  const allImages = [item.imageUrl, ...(item.itemImages?.map(img => img.image) || [])].filter(Boolean) as string[];
 
   const handleDateSelect = (range: DateRange | undefined) => {
     setSelectedRange(range);
@@ -88,7 +91,9 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
     try {
       const diffTime = Math.abs(selectedRange.to.getTime() - selectedRange.from.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-      const totalPrice = diffDays * item.pricePerDay;
+      const rentalPrice = diffDays * item.pricePerDay;
+      const depositAmount = item.securityDeposit || 0;
+      const totalPrice = rentalPrice + depositAmount;
 
       await createRequest({
         itemId: item.id,
@@ -97,7 +102,8 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
         startDate: selectedRange.from,
         endDate: selectedRange.to,
         status: 'Pending',
-        totalPrice: totalPrice,
+        totalPrice: rentalPrice,
+        depositAmount: depositAmount,
       });
 
       // Add notification for the item owner
@@ -287,6 +293,12 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
               {item.pricePerDay.toFixed(2)}
               <span className="text-sm text-muted-foreground font-normal ml-1">/ day</span>
             </div>
+            {item.securityDeposit > 0 && (
+              <div className="text-xs text-muted-foreground mt-1 flex items-center">
+                <ShieldCheck className="w-3 h-3 mr-1 text-primary" />
+                Security Deposit: ₱{item.securityDeposit.toFixed(2)} (Refundable)
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             {isOwnerViewing ? (

@@ -44,6 +44,7 @@ const formSchema = z.object({
   aiDetails: z.string().optional(),
   description: z.string().min(10, { message: 'Description must be at least 10 characters long.' }),
   pricePerDay: z.coerce.number().min(0.01, { message: 'Price must be a positive number.' }),
+  securityDeposit: z.coerce.number().min(0, { message: 'Deposit must be 0 or more.' }),
   deliveryMethod: z.enum(['Pick Up', 'Delivery', 'Both'], { required_error: 'Please select a delivery method.' }),
   images: z.any().optional(),
   features: z.string().optional(),
@@ -70,7 +71,8 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [imagePreviews, setImagePreviews] = useState<string[]>(initialData?.images || (initialData?.imageUrl ? [initialData.imageUrl] : []));
+  const [imagePreviews, setImagePreviews] = useState<string[]>(initialData?.itemImages?.map(img => img.image) || (initialData?.imageUrl ? [initialData.imageUrl] : []));
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const isEditMode = !!initialData;
 
@@ -81,6 +83,7 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
     aiDetails: '',
     description: initialData?.description || '',
     pricePerDay: initialData?.pricePerDay || 0,
+    securityDeposit: initialData?.securityDeposit || 0,
     deliveryMethod: initialData?.deliveryMethod || 'Pick Up',
     features: initialData?.features?.join(', ') || '',
   };
@@ -97,15 +100,18 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
         category: categories.find(c => c.name === initialData.category)?.id || '',
         description: initialData.description || '',
         pricePerDay: initialData.pricePerDay || 0,
+        securityDeposit: initialData.securityDeposit || 0,
         deliveryMethod: initialData.deliveryMethod as DeliveryMethodValue || 'Pick Up',
         aiKeywords: '',
         aiDetails: '',
         features: initialData.features?.join(', ') || '',
       });
-      setImagePreviews(initialData.images || (initialData.imageUrl ? [initialData.imageUrl] : []));
+      setImagePreviews(initialData.itemImages?.map(img => img.image) || (initialData.imageUrl ? [initialData.imageUrl] : []));
+      setSelectedFiles([]);
     } else {
       form.reset(defaultValues);
       setImagePreviews([]);
+      setSelectedFiles([]);
     }
   }, [initialData, form]);
 
@@ -165,10 +171,11 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
           category: itemCategoryName,
           description: data.description,
           pricePerDay: data.pricePerDay,
+          securityDeposit: data.securityDeposit,
           deliveryMethod: data.deliveryMethod,
           features: itemFeatures,
           imageUrl: imagePreviews.length > 0 ? imagePreviews[0] : (initialData.imageUrl || `https://placehold.co/600x400.png?text=${encodeURIComponent(data.itemName)}`),
-          images: imagePreviews.length > 0 ? imagePreviews : initialData.images,
+          // Note: In a real app, updating images via forms needs careful logic to differentiate between old URLs and new Files.
         };
         await updateItem(updatedItemData);
         toast({
@@ -181,10 +188,10 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
           category: itemCategoryName,
           description: data.description,
           pricePerDay: data.pricePerDay,
+          securityDeposit: data.securityDeposit,
           deliveryMethod: data.deliveryMethod,
           features: itemFeatures,
-          imageUrl: imagePreviews.length > 0 ? imagePreviews[0] : `https://placehold.co/600x400.png?text=${encodeURIComponent(data.itemName)}`,
-          images: imagePreviews,
+          files: selectedFiles,
         };
         await addItem(newItemPayload);
         toast({
@@ -193,6 +200,7 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
         });
         form.reset(defaultValues);
         setImagePreviews([]);
+        setSelectedFiles([]);
       }
     } catch (error) {
       console.error("Error submitting item:", error);
@@ -210,34 +218,26 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
     const files = event.target.files;
     if (files) {
       const currentPreviewCount = imagePreviews.length;
-      // Determine how many new files can be processed (up to a total of 5)
       const filesToProcess = Array.from(files).slice(0, 5 - currentPreviewCount);
+
+      setSelectedFiles(prev => [...prev, ...filesToProcess].slice(0, 5));
 
       filesToProcess.forEach(file => {
         const reader = new FileReader();
         reader.onloadend = () => {
-          // reader.result contains the Base64 Data URI
           if (typeof reader.result === 'string') {
-            setImagePreviews(prev => [...prev, reader.result as string].slice(0, 5)); // Ensure not to exceed 5
+            setImagePreviews(prev => [...prev, reader.result as string].slice(0, 5));
           }
         };
-        reader.onerror = (error) => {
-          console.error("Error reading file:", error);
-          toast({
-            title: "Image Upload Error",
-            description: "Could not read one of the selected files.",
-            variant: "destructive",
-          });
-        };
-        reader.readAsDataURL(file); // Read file as Data URL
+        reader.readAsDataURL(file);
       });
-      // Clear the file input value to allow re-uploading the same file if needed after removal
       event.target.value = '';
     }
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
     setImagePreviews(prev => prev.filter((_, index) => index !== indexToRemove));
+    setSelectedFiles(prev => prev.filter((_, index) => index !== indexToRemove));
   };
 
 
@@ -323,6 +323,12 @@ export function NewItemForm({ initialData }: NewItemFormProps) {
             <Label htmlFor="pricePerDay">Price Per Day (₱)</Label>
             <Input id="pricePerDay" type="number" step="0.01" {...form.register('pricePerDay')} placeholder="e.g., 1000.00" disabled={isSubmitting} />
             {errors.pricePerDay && <p className="text-sm text-destructive">{errors.pricePerDay.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="securityDeposit">Security Deposit (₱) - Refundable</Label>
+            <Input id="securityDeposit" type="number" step="0.01" {...form.register('securityDeposit')} placeholder="e.g., 5000.00" disabled={isSubmitting} />
+            {errors.securityDeposit && <p className="text-sm text-destructive">{errors.securityDeposit.message}</p>}
           </div>
 
           <div className="space-y-2">

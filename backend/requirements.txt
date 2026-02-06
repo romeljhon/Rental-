@@ -1,0 +1,10 @@
+Django>=5.1.5
+django-cors-headers
+djangorestframework
+python-dotenv
+Pillow
+django-filter
+django-cleanup
+asgiref
+sqlparse
+tzdata
