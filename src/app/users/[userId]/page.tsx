@@ -12,8 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { UserCircle, PackageOpen, ArrowLeft, MessageSquare, Loader2 } from 'lucide-react';
-import { getAllItems } from '@/lib/item-storage';
-import { getAllMockUsers } from '@/lib/auth';
+import { authService, itemsService } from '@/services';
 
 interface UserPageData {
   user: UserProfile;
@@ -34,19 +33,37 @@ export default function UserProfilePage() {
         setIsLoading(true);
         setError(null);
         try {
-          const allUsers = getAllMockUsers();
-          const user = allUsers.find(u => u.id === userId);
+          const userItems = await itemsService.getByOwner(userId);
+          const availableItems = userItems.filter(item => item.availabilityStatus === 'Available');
 
-          if (!user) {
-            setError("User not found.");
-            setData(null);
-            return;
+          let userProfile: UserProfile | undefined;
+
+          if (userItems.length > 0) {
+            userProfile = userItems[0].owner;
+          } else {
+            // Fallback: Check if it is the current logged-in user
+            const currentUser = authService.getCurrentUser();
+            if (currentUser && currentUser.id === userId) {
+              userProfile = currentUser;
+            } else {
+              // Without a dedicated getUser API, we can't fetch profile if they have no items
+              // For now, we'll create a placeholder if we can't find them, or treat as not found if that logic is preferred.
+              // But let's assume we can at least show the page with empty items.
+              userProfile = {
+                id: userId,
+                name: `User ${userId}`,
+                avatarUrl: undefined,
+                email: undefined
+              };
+            }
           }
 
-          const allItems = await getAllItems();
-          const userItems = allItems.filter(item => item.owner.id === userId && item.availabilityStatus === 'Available');
+          if (userProfile) {
+            setData({ user: userProfile, items: availableItems });
+          } else {
+            setError("User not found.");
+          }
 
-          setData({ user, items: userItems });
         } catch (e) {
           console.error("Failed to fetch user data:", e);
           setError("An error occurred while loading the profile.");
@@ -111,7 +128,7 @@ export default function UserProfilePage() {
           </div>
         </CardHeader>
       </Card>
-      
+
       <section>
         <h2 className="text-2xl font-bold font-headline mb-6 text-foreground">
           Items for Rent by {user.name.split(' ')[0]}
@@ -119,7 +136,7 @@ export default function UserProfilePage() {
         {items.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {items.map((item) => (
-              <ItemCard key={item.id} item={item} /> 
+              <ItemCard key={item.id} item={item} />
             ))}
           </div>
         ) : (
@@ -130,7 +147,7 @@ export default function UserProfilePage() {
           </div>
         )}
       </section>
-       <div className="mt-8 text-center">
+      <div className="mt-8 text-center">
         <Button asChild variant="outline">
           <Link href="/"><ArrowLeft className="mr-2 h-4 w-4" />Back to All Listings</Link>
         </Button>

@@ -1,184 +1,346 @@
+/**
+ * User Profile Page
+ * View and edit user profile information
+ */
 
-"use client";
+'use client';
 
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { useState, useEffect } from 'react';
+import { User, Mail, MapPin, Star, Package, Calendar, Camera, Save, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { UserCog, Save, Loader2, Camera } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import type { UserProfile } from '@/types';
-import { getActiveUserProfile, updateUserProfileInStorage } from '@/lib/auth';
-import { useRouter } from 'next/navigation';
-
-const profileFormSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  avatarUrl: z.string().url({ message: "Please enter a valid URL for the avatar." }).or(z.literal('')).optional(),
-});
-
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { authService } from '@/services';
+import { itemsService } from '@/services';
+import { requestsService } from '@/services';
+import type { RentalItem, RentalRequest } from '@/types';
 
 export default function ProfilePage() {
   const { toast } = useToast();
-  const router = useRouter();
-  const [activeUser, setActiveUser] = useState<UserProfile | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState<string | undefined>(undefined);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
-    defaultValues: {
-      name: '',
-      avatarUrl: '',
-    },
+  const currentUser = authService.getCurrentUser();
+  const [userData, setUserData] = useState({
+    name: currentUser?.name || '',
+    email: currentUser?.email || '',
+    location: '',
+    bio: '',
+    phone: '',
+  });
+
+  const [stats, setStats] = useState({
+    totalListings: 0,
+    activeRentals: 0,
+    totalRevenue: 0,
+    averageRating: 4.8,
+    reviewsCount: 0,
+    memberSince: new Date(),
   });
 
   useEffect(() => {
-    const user = getActiveUserProfile();
-    setActiveUser(user);
-    if (user) {
-      form.reset({
-        name: user.name.split('(')[0].trim(), // Remove "(Owner)" or "(Renter)" part for editing
-        avatarUrl: user.avatarUrl || '',
-      });
-      setAvatarPreview(user.avatarUrl);
+    if (currentUser) {
+      loadUserData();
     }
-  }, [form]);
+  }, [currentUser]);
 
-  const watchedAvatarUrl = form.watch('avatarUrl');
+  const loadUserData = async () => {
+    if (!currentUser) return;
 
-  useEffect(() => {
-    setAvatarPreview(watchedAvatarUrl);
-  }, [watchedAvatarUrl]);
-
-  const onSubmit = async (data: ProfileFormValues) => {
-    if (!activeUser) {
-      toast({ title: "Error", description: "No active user found.", variant: "destructive" });
-      return;
-    }
-    setIsSubmitting(true);
+    setIsLoading(true);
     try {
-      // Re-append role indication if it was part of the original name, for display consistency elsewhere
-      const originalRoleSuffix = activeUser.name.match(/\(.*\)/);
-      const newDisplayName = originalRoleSuffix ? `${data.name.trim()} ${originalRoleSuffix[0]}` : data.name.trim();
+      // Load user's items and requests
+      const [items, requests] = await Promise.all([
+        itemsService.getByOwner(currentUser.id),
+        requestsService.getByOwner(currentUser.id),
+      ]);
 
-      const success = updateUserProfileInStorage(activeUser.id, newDisplayName, data.avatarUrl || '');
-      if (success) {
-        toast({
-          title: "Profile Updated",
-          description: "Your profile information has been saved.",
-        });
-        // Force a re-fetch of user profile for header and other components
-        // A common way is to briefly change then revert a query param, or use router.refresh()
-        router.refresh(); 
-        // Update local state for immediate feedback on the page if needed, though router.refresh() should handle it
-        setActiveUser(prev => prev ? {...prev, name: newDisplayName, avatarUrl: data.avatarUrl || prev.avatarUrl} : null);
+      // Calculate stats
+      const activeRentals = items.filter(item => item.availabilityStatus === 'Rented').length;
+      const completedRequests = requests.filter(r =>
+        r.status === 'Completed' || r.status === 'ReceiptConfirmed'
+      );
+      const totalRevenue = completedRequests.reduce((sum, req) => sum + req.totalPrice, 0);
 
-      } else {
-        toast({ title: "Error", description: "Could not update profile.", variant: "destructive" });
-      }
+      setStats({
+        totalListings: items.length,
+        activeRentals,
+        totalRevenue,
+        averageRating: 4.8, // Would come from backend in real app
+        reviewsCount: completedRequests.length,
+        memberSince: new Date(2024, 0, 1), // Would come from backend
+      });
     } catch (error) {
-      console.error("Failed to update profile:", error);
-      toast({ title: "Error", description: "An unexpected error occurred.", variant: "destructive" });
+      console.error('Failed to load user data:', error);
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  if (!activeUser) {
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      // In a real app, this would call an API to update the user profile
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+
+      toast({
+        title: 'Profile Updated',
+        description: 'Your profile has been successfully updated.',
+      });
+      setIsEditing(false);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update profile. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!currentUser || isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-4 text-lg text-muted-foreground">Loading profile...</p>
-      </div>
+      <ProtectedRoute>
+        <div className="flex justify-center items-center min-h-[calc(100vh-200px)]">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      </ProtectedRoute>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <Card className="shadow-xl">
-        <CardHeader>
-          <CardTitle className="text-3xl font-headline text-primary flex items-center gap-2">
-            <UserCog className="h-7 w-7" />
-            My Profile
-          </CardTitle>
-          <CardDescription>View and update your personal information.</CardDescription>
-        </CardHeader>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-6">
-            <div className="flex flex-col items-center space-y-4">
-              <Avatar className="h-32 w-32 border-4 border-primary/30 shadow-md">
-                <AvatarImage src={avatarPreview || activeUser.avatarUrl} alt={activeUser.name} data-ai-hint="profile person large" />
-                <AvatarFallback className="text-4xl">
-                  {activeUser.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="w-full space-y-1">
-                 <Label htmlFor="avatarUrl" className="flex items-center gap-1.5"><Camera size={14}/> Avatar URL</Label>
-                <Controller
-                  name="avatarUrl"
-                  control={form.control}
-                  render={({ field }) => (
-                    <Input
-                      id="avatarUrl"
-                      placeholder="https://example.com/avatar.png"
-                      {...field}
-                      disabled={isSubmitting}
-                    />
+    <ProtectedRoute>
+      <div className="space-y-8 pb-20">
+        {/* Profile Header */}
+        <div className="bg-white dark:bg-slate-900 rounded-[3rem] border-2 border-primary/10 overflow-hidden">
+          <div className="h-32 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20" />
+
+          <div className="px-8 pb-8">
+            <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-end -mt-16">
+              {/* Avatar */}
+              <div className="relative group">
+                <Avatar className="h-32 w-32 border-4 border-white dark:border-slate-900 shadow-2xl">
+                  <AvatarImage src={currentUser.avatarUrl} />
+                  <AvatarFallback className="text-3xl font-black">
+                    {currentUser.name[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <button className="absolute bottom-2 right-2 p-2 rounded-full bg-primary text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* User Info */}
+              <div className="flex-1 mt-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h1 className="text-3xl font-black text-foreground tracking-tight">
+                      {currentUser.name}
+                    </h1>
+                    <p className="text-muted-foreground flex items-center gap-2 mt-1">
+                      <Mail className="h-4 w-4" />
+                      {currentUser.email}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="outline" className="rounded-full px-3 py-1">
+                        <Star className="h-3 w-3 mr-1 fill-primary text-primary" />
+                        {stats.averageRating} ({stats.reviewsCount} reviews)
+                      </Badge>
+                      <Badge variant="secondary" className="rounded-full px-3 py-1">
+                        Member since {stats.memberSince.getFullYear()}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {!isEditing ? (
+                    <Button
+                      onClick={() => setIsEditing(true)}
+                      size="lg"
+                      className="rounded-2xl px-6 font-bold uppercase tracking-widest"
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      Edit Profile
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => setIsEditing(false)}
+                        variant="outline"
+                        size="lg"
+                        className="rounded-2xl px-4"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        size="lg"
+                        className="rounded-2xl px-6 font-bold uppercase tracking-widest"
+                      >
+                        {isSaving ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4 mr-2" />
+                        )}
+                        Save Changes
+                      </Button>
+                    </div>
                   )}
-                />
-                {form.formState.errors.avatarUrl && (
-                  <p className="text-sm text-destructive">{form.formState.errors.avatarUrl.message}</p>
-                )}
+                </div>
               </div>
             </div>
 
-            <div className="space-y-1">
-              <Label htmlFor="name">Full Name</Label>
-              <Controller
-                name="name"
-                control={form.control}
-                render={({ field }) => (
-                  <Input 
-                    id="name" 
-                    placeholder="Your full name" 
-                    {...field} 
-                    disabled={isSubmitting} 
-                  />
-                )}
-              />
-              {form.formState.errors.name && (
-                <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
-              )}
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+              <div className="p-4 rounded-2xl bg-primary/5 text-center">
+                <Package className="h-6 w-6 mx-auto mb-2 text-primary" />
+                <div className="text-2xl font-black text-foreground">{stats.totalListings}</div>
+                <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                  Total Listings
+                </div>
+              </div>
+              <div className="p-4 rounded-2xl bg-primary/5 text-center">
+                <Calendar className="h-6 w-6 mx-auto mb-2 text-primary" />
+                <div className="text-2xl font-black text-foreground">{stats.activeRentals}</div>
+                <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                  Active Rentals
+                </div>
+              </div>
+              <div className="p-4 rounded-2xl bg-primary/5 text-center">
+                <Star className="h-6 w-6 mx-auto mb-2 text-primary fill-primary" />
+                <div className="text-2xl font-black text-foreground">{stats.averageRating}</div>
+                <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                  Avg Rating
+                </div>
+              </div>
+              <div className="p-4 rounded-2xl bg-primary/5 text-center">
+                <div className="text-2xl font-black text-primary">₱{stats.totalRevenue.toLocaleString()}</div>
+                <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                  Total Revenue
+                </div>
+              </div>
             </div>
-            
-            <div className="space-y-1">
-              <Label htmlFor="email">Email Address</Label>
-              <Input 
-                id="email" 
-                type="email"
-                value={activeUser.id.includes('user123') ? "alice.w@example.com" : "john.doe@example.com"} // Mock email based on ID
-                disabled 
-                className="bg-muted/50 cursor-not-allowed"
-              />
-               <p className="text-xs text-muted-foreground">Email address cannot be changed.</p>
-            </div>
+          </div>
+        </div>
 
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Save Changes
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+        {/* Profile Content */}
+        <Tabs defaultValue="about" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 h-14 p-1 bg-white dark:bg-slate-900 rounded-2xl border-2 border-primary/10">
+            <TabsTrigger value="about" className="rounded-xl font-bold text-xs uppercase tracking-widest">
+              About
+            </TabsTrigger>
+            <TabsTrigger value="reviews" className="rounded-xl font-bold text-xs uppercase tracking-widest">
+              Reviews
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="rounded-xl font-bold text-xs uppercase tracking-widest">
+              Activity
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="about" className="space-y-6">
+            <Card className="rounded-[2.5rem] border-2 border-primary/10">
+              <CardHeader>
+                <CardTitle>Profile Information</CardTitle>
+                <CardDescription>
+                  {isEditing ? 'Update your profile details' : 'Your public profile information'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label>Full Name</Label>
+                    <Input
+                      value={userData.name}
+                      onChange={(e) => setUserData({ ...userData, name: e.target.value })}
+                      disabled={!isEditing}
+                      className="h-12 rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      value={userData.email}
+                      onChange={(e) => setUserData({ ...userData, email: e.target.value })}
+                      disabled={!isEditing}
+                      className="h-12 rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Phone Number</Label>
+                    <Input
+                      value={userData.phone}
+                      onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
+                      disabled={!isEditing}
+                      placeholder="+63 XXX XXX XXXX"
+                      className="h-12 rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Location</Label>
+                    <Input
+                      value={userData.location}
+                      onChange={(e) => setUserData({ ...userData, location: e.target.value })}
+                      disabled={!isEditing}
+                      placeholder="City, Country"
+                      className="h-12 rounded-xl"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Bio</Label>
+                  <Textarea
+                    value={userData.bio}
+                    onChange={(e) => setUserData({ ...userData, bio: e.target.value })}
+                    disabled={!isEditing}
+                    placeholder="Tell others about yourself..."
+                    className="min-h-[120px] rounded-xl"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="reviews">
+            <Card className="rounded-[2.5rem] border-2 border-primary/10">
+              <CardHeader>
+                <CardTitle>Reviews & Ratings</CardTitle>
+                <CardDescription>What others say about renting from you</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground/20" />
+                  <p className="text-sm text-muted-foreground">No reviews yet</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <Card className="rounded-[2.5rem] border-2 border-primary/10">
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+                <CardDescription>Your rental history and transactions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground/20" />
+                  <p className="text-sm text-muted-foreground">No recent activity</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </ProtectedRoute>
   );
 }

@@ -18,9 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 import type { DateRange } from 'react-day-picker';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
-import { getActiveUserId, getActiveUserProfile } from '@/lib/auth';
-import { useNotifications } from '@/contexts/NotificationContext'; // Added
-import { createRequest } from '@/lib/request-storage';
+import { authService, requestsService } from '@/services';
+import { useRouter } from 'next/navigation';
 
 interface ItemDetailViewProps {
   item: RentalItem;
@@ -28,18 +27,16 @@ interface ItemDetailViewProps {
 
 export function ItemDetailView({ item }: ItemDetailViewProps) {
   const { toast } = useToast();
-  const { addNotification } = useNotifications(); // Added
-  const [activeUser, setActiveUser] = useState<UserProfile | null>(null); // To store full profile
+  const router = useRouter();
+  const [activeUser, setActiveUser] = useState<UserProfile | null>(null);
   const [selectedRange, setSelectedRange] = useState<DateRange | undefined>(undefined);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [chosenDeliveryByRenter, setChosenDeliveryByRenter] = useState<'Pick Up' | 'Delivery' | null>(null);
   const [detailedAvailabilityMessage, setDetailedAvailabilityMessage] = useState<string | null>(null);
-  const [activeUserId, setActiveUserIdState] = useState<string | null>(null); // Renamed to avoid conflict
 
   useEffect(() => {
-    const id = getActiveUserId();
-    setActiveUserIdState(id);
-    setActiveUser(getActiveUserProfile());
+    const user = authService.getCurrentUser();
+    setActiveUser(user);
   }, []);
 
   useEffect(() => {
@@ -68,7 +65,8 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
 
   const handleRequestToRent = async () => {
     if (!activeUser) {
-      toast({ title: 'Error', description: 'Could not identify active user.', variant: 'destructive' });
+      toast({ title: 'Login Required', description: 'Please login to rent items.', variant: 'destructive' });
+      router.push('/login');
       return;
     }
     if (!selectedRange || !selectedRange.from || !selectedRange.to) {
@@ -91,39 +89,39 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
     try {
       const diffTime = Math.abs(selectedRange.to.getTime() - selectedRange.from.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-      const rentalPrice = diffDays * item.pricePerDay;
-      const depositAmount = item.securityDeposit || 0;
-      const totalPrice = rentalPrice + depositAmount;
+      const totalPrice = diffDays * item.pricePerDay;
 
-      await createRequest({
-        itemId: item.id,
-        requesterName: activeUser.name,
-        ownerName: item.owner.name,
-        startDate: selectedRange.from,
-        endDate: selectedRange.to,
+      // Ensure valid dates
+      const startDate = format(selectedRange.from, 'yyyy-MM-dd');
+      const endDate = format(selectedRange.to, 'yyyy-MM-dd');
+
+      await requestsService.create({
+        item: parseInt(item.id),
+        requester_name: activeUser.name,
+        requester_id: activeUser.id,
+        owner_name: item.owner.name,
+        owner_id: item.owner.id,
+        start_date: startDate,
+        end_date: endDate,
+        total_price: totalPrice,
         status: 'Pending',
-        totalPrice: rentalPrice,
-        depositAmount: depositAmount,
-      });
-
-      // Add notification for the item owner
-      addNotification({
-        targetUserId: item.owner.id,
-        eventType: 'new_request',
-        title: 'New Rental Request!',
-        message: `${activeUser.name} wants to rent your item: ${item.name}.`,
-        link: `/requests`,
-        relatedItemId: item.id,
-        relatedUser: { id: activeUser.id, name: activeUser.name }
       });
 
       toast({
         title: 'Rental Requested',
         description: `Your request for ${item.name} has been submitted.`,
       });
-    } catch (error) {
+
+      // Optionally redirect to requests page
+      router.push('/requests');
+
+    } catch (error: any) {
       console.error("Failed to create rental request:", error);
-      toast({ title: 'Error', description: 'Failed to submit rental request.', variant: 'destructive' });
+      toast({
+        title: 'Error',
+        description: error.response?.data?.detail || 'Failed to submit rental request. Please try again.',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -158,7 +156,7 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
     return <span className="flex items-center">{icon} {text}</span>;
   };
 
-  const isOwnerViewing = activeUserId === item.owner.id;
+  const isOwnerViewing = activeUser?.id === item.owner.id;
 
   const isRequestButtonDisabled =
     isOwnerViewing ||
@@ -238,22 +236,48 @@ export function ItemDetailView({ item }: ItemDetailViewProps) {
             <Separator className="my-3" />
             <CardDescription className="text-base leading-relaxed whitespace-pre-line">{item.description}</CardDescription>
           </CardHeader>
+        </Card>
 
-          {item.features && item.features.length > 0 && (
+        {item.features && item.features.length > 0 && (
+          <Card className="shadow-xl">
+            <CardHeader>
+              <h3 className="text-xl font-black font-headline uppercase tracking-widest text-primary/40 text-[10px]">Included Features</h3>
+              <CardTitle className="font-headline text-2xl">Premium Amenities</CardTitle>
+            </CardHeader>
             <CardContent>
-              <h3 className="text-lg font-semibold mb-2 font-headline">Features</h3>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 list-none pl-0">
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {item.features.map((feature, index) => (
-                  <li key={index} className="flex items-center text-sm text-foreground">
-                    <CheckCircle className="w-4 h-4 mr-2 text-primary flex-shrink-0" />
+                  <li key={index} className="flex items-center p-3 rounded-2xl bg-primary/5 text-sm font-bold text-foreground border border-primary/5">
+                    <CheckCircle className="w-5 h-5 mr-3 text-primary" />
                     {feature}
                   </li>
                 ))}
               </ul>
             </CardContent>
-          )}
-        </Card>
+          </Card>
+        )}
 
+        {item.specifications && Object.keys(item.specifications).length > 0 && (
+          <Card className="shadow-xl bg-slate-950 text-white overflow-hidden border-none">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <Info className="w-32 h-32" />
+            </div>
+            <CardHeader>
+              <h3 className="text-xl font-black font-headline uppercase tracking-widest text-white/30 text-[10px]">Technical Specifications</h3>
+              <CardTitle className="font-headline text-2xl text-white">Vehicle Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                {Object.entries(item.specifications).map(([key, value]) => (
+                  <div key={key} className="space-y-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/40">{key}</p>
+                    <p className="text-base font-bold text-white tracking-tight">{value}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
         <Card className="shadow-xl">
           <CardHeader>
             <CardTitle className="font-headline text-xl">About the Owner</CardTitle>

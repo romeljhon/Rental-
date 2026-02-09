@@ -40,12 +40,12 @@ export default function RegisterPage() {
                 body: JSON.stringify({ username, email, password }),
             });
 
-            localStorage.setItem('rentaleaseToken', data.token);
-            localStorage.setItem('rentaleaseActiveUserId', data.user.id.toString());
+            localStorage.setItem('rentsnapToken', data.token);
+            localStorage.setItem('rentsnapActiveUserId', data.user.id.toString());
 
             toast({
                 title: "Account Created",
-                description: `Welcome to RentalEase, ${data.user.username}!`,
+                description: `Welcome to RentSnap, ${data.user.username}!`,
             });
 
             router.push('/');

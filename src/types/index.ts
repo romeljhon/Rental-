@@ -13,13 +13,7 @@ export interface UserProfile {
   id: string;
   name: string;
   avatarUrl?: string;
-  // email?: string; // Add if needed for contact or identification
-}
-
-export interface ItemImage {
-  id: string;
-  image: string;
-  isPrimary: boolean;
+  email?: string; // For contact and authentication
 }
 
 export interface RentalItem {
@@ -34,12 +28,14 @@ export interface RentalItem {
   availabilityStatus: 'Available' | 'Rented' | 'Unavailable';
   availableFromDate?: Date;
   owner: UserProfile;
-  location?: string;
-  rating?: number;
+  owner_id?: string; // Backend compatibility field
+  location?: string; // e.g., "City, State" or specific address
+  rating?: number; // Average rating (e.g., 1-5)
   reviewsCount?: number;
   features?: string[];
   deliveryMethod?: 'Pick Up' | 'Delivery' | 'Both';
   createdAt?: Date;
+  specifications?: Record<string, string>; // e.g., { "Seats": "5", "Transmission": "Auto" } for Cars
 }
 
 export interface RentalCategory {

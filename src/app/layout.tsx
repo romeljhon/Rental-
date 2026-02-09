@@ -1,15 +1,16 @@
 
-import type {Metadata} from 'next';
+import type { Metadata } from 'next';
 import './globals.css';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/layout/ThemeProvider';
-import { NotificationProvider } from '@/contexts/NotificationContext'; // Added import
+import { NotificationProvider } from '@/contexts/NotificationContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 export const metadata: Metadata = {
-  title: 'RentalEase - Easy Rentals For Everyone',
-  description: 'Find and rent items easily with RentalEase.',
+  title: 'RentSnap - Fast & Snappy Rentals',
+  description: 'Find and rent anything instantly with RentSnap.',
 };
 
 export default function RootLayout({
@@ -31,14 +32,16 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <NotificationProvider> {/* Added Provider */}
-            <Header />
-            <main className="flex-grow container mx-auto px-4 py-8">
-              {children}
-            </main>
-            <Footer />
-            <Toaster />
-          </NotificationProvider> {/* Closed Provider */}
+          <AuthProvider>
+            <NotificationProvider>
+              <Header />
+              <main className="flex-grow container mx-auto px-4 py-8">
+                {children}
+              </main>
+              <Footer />
+              <Toaster />
+            </NotificationProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -1,13 +1,12 @@
 
-"use client"; 
+"use client";
 import { NewItemForm } from '@/components/items/NewItemForm';
 import type { RentalItem, UserProfile } from '@/types';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { useParams } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
-import { getActiveUserProfile } from '@/lib/auth';
-import { getItemById as fetchItemById } from '@/lib/item-storage'; // Updated import
+import { authService, itemsService } from '@/services';
 
 export default function EditItemPage() {
   const params = useParams();
@@ -18,17 +17,17 @@ export default function EditItemPage() {
   const [activeUser, setActiveUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    const userProfile = getActiveUserProfile(); // Fetch once
+    const userProfile = authService.getCurrentUser();
     setActiveUser(userProfile);
   }, []);
 
   useEffect(() => {
-    if (id && activeUser) { 
+    if (id && activeUser) {
       const fetchItemForEditing = async () => {
         setIsLoading(true);
         setError(null);
         try {
-          const fetchedItem = await fetchItemById(id);
+          const fetchedItem = await itemsService.getById(id);
           if (fetchedItem) {
             if (fetchedItem.owner.id === activeUser.id) {
               setItem(fetchedItem);
@@ -75,18 +74,18 @@ export default function EditItemPage() {
       </div>
     );
   }
-  
+
   if (!item) { // Should be covered by error state if not found, but good fallback.
     return (
-        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
-            <Alert variant="destructive" className="max-w-md">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Item Not Found</AlertTitle>
-                <AlertDescription>
-                Could not load item details for editing. It might have been removed.
-                </AlertDescription>
-            </Alert>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Item Not Found</AlertTitle>
+          <AlertDescription>
+            Could not load item details for editing. It might have been removed.
+          </AlertDescription>
+        </Alert>
+      </div>
     );
   }
 

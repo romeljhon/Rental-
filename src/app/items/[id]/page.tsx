@@ -6,7 +6,7 @@ import { ItemDetailView } from '@/components/items/ItemDetailView';
 import type { RentalItem } from '@/types';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle, Loader2 } from "lucide-react";
-import { getItemById as fetchItemById } from '@/lib/item-storage';
+import { itemsService } from '@/services';
 import { useParams } from 'next/navigation';
 
 export default function ItemDetailPage() {
@@ -22,7 +22,7 @@ export default function ItemDetailPage() {
         setIsLoading(true);
         setError(null);
         try {
-          const fetchedItem = await fetchItemById(id);
+          const fetchedItem = await itemsService.getById(id);
           if (fetchedItem) {
             setItem(fetchedItem);
           } else {
@@ -53,15 +53,15 @@ export default function ItemDetailPage() {
 
   if (error || !item) {
     return (
-        <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
-            <Alert variant="destructive" className="max-w-md">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>{error === "Item not found." || !item ? "Item Not Found" : "Error"}</AlertTitle>
-                <AlertDescription>
-                {error || "The rental item you are looking for does not exist or may have been removed."}
-                </AlertDescription>
-            </Alert>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>{error === "Item not found." || !item ? "Item Not Found" : "Error"}</AlertTitle>
+          <AlertDescription>
+            {error || "The rental item you are looking for does not exist or may have been removed."}
+          </AlertDescription>
+        </Alert>
+      </div>
     );
   }
 

@@ -53,7 +53,7 @@ export function ItemCard({ item, onEdit, onRemove }: ItemCardProps) {
       <Card className="flex flex-col h-full overflow-hidden border-primary/5 bg-card hover:border-primary/20 transition-all duration-500 shadow-sm hover:shadow-2xl hover:-translate-y-2 rounded-[2rem]">
         <CardHeader className="p-0 relative">
           <Link href={`/items/${item.id}`} passHref>
-            <div className="aspect-[4/3] overflow-hidden relative">
+            <div className="aspect-[4/3] overflow-hidden relative bg-muted/30">
               <Image
                 src={item.imageUrl || `https://placehold.co/600x400.png`}
                 alt={item.name}
@@ -62,7 +62,7 @@ export function ItemCard({ item, onEdit, onRemove }: ItemCardProps) {
                 className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-700 ease-out"
                 data-ai-hint={`${item.category} ${item.name}`}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
           </Link>
 

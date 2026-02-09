@@ -23,7 +23,7 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     }
 
     if (typeof window !== 'undefined') {
-        const token = localStorage.getItem('rentaleaseToken');
+        const token = localStorage.getItem('rentsnapToken');
         if (token) {
             headers['Authorization'] = `Token ${token}`;
         }
